@@ -1,0 +1,65 @@
+schema: spec-driven
+
+context: |
+  Producto: Loop Market, marketplace de compraventa de artículos de segunda mano
+  entre particulares. Dominio: publicaciones (listings), búsqueda, mensajería
+  comprador-vendedor y cierre de operación.
+
+  Stack:
+  - Next.js 16 (App Router, Server Components, Server Actions, Route Handlers)
+  - TypeScript estricto, React 19
+  - Tailwind CSS v4 + shadcn/ui (Radix) + lucide-react
+  - react-hook-form + zod (mismo esquema zod en cliente y servidor)
+  - Estado: Context API por defecto; zustand solo para estado global con
+    suscripciones selectivas (carrito de seguimiento, filtros de búsqueda)
+  - Persistencia: PostgreSQL + Prisma
+  - Tests: Vitest + Testing Library (unidad/integración), Playwright (E2E)
+  - Tooling: bun, ESLint, Prettier, lefthook, commitlint
+
+  Arquitectura: Feature-Sliced Design v2.1 en `src/`, con las capas FSD `app` y
+  `pages` renombradas a `_app` y `_pages` para no chocar con el App Router.
+  Capas de mayor a menor: _app > _pages > widgets > features > entities > shared.
+  Una capa solo importa de capas estrictamente inferiores; los slices de una
+  misma capa nunca se importan entre sí. Segmentos por slice: ui, model, api,
+  lib, config. Todo slice expone su API pública por `index.ts`; nada consume
+  rutas internas. `app/` en la raíz contiene solo routing y re-exporta desde
+  `_pages`.
+
+  Convenciones:
+  - TDD: el test se escribe antes que la implementación
+  - Conventional commits en inglés, minúsculas, máximo 50 caracteres
+  - Ningún archivo supera las 300 líneas
+  - Sin comentarios ni docstrings en el código: el nombre y la estructura
+    explican la intención
+  - Validación en el borde: todo input externo pasa por un esquema zod antes de
+    tocar la capa de dominio
+  - Sin duplicación: se reutiliza lo que ya existe en `shared` o `entities`
+
+rules:
+  proposal:
+    - Empezar por el problema de usuario, no por la solución técnica
+    - Incluir siempre una sección de "Non-goals"
+    - Máximo 400 palabras
+  specs:
+    - Un requirement por comportamiento observable, redactado como "The system SHALL ..."
+    - Cada requirement lleva al menos un escenario `#### Scenario:` en Given/When/Then
+    - Los escenarios describen comportamiento observable, nunca implementación
+    - Incluir escenarios de error y de autorización, no solo el camino feliz
+  design:
+    - Justificar cada decisión con alternativas descartadas
+    - Indicar la capa FSD y el slice donde vive cada pieza nueva
+    - Señalar qué corre en servidor y qué en cliente
+  tasks:
+    - Cada tarea cabe en menos de 2 horas
+    - La tarea de test precede a la tarea de implementación que verifica
+    - Agrupar por capa FSD para que el orden de trabajo respete las dependencias
+
+operations:
+  apply:
+    guidance:
+      - Escribir primero el test que falla, luego el código mínimo que lo pasa
+      - Verificar que ningún archivo supera 300 líneas antes de cerrar una tarea
+      - Ejecutar lint, typecheck y tests antes de marcar tareas como completas
+  archive:
+    guidance:
+      - Confirmar que los specs principales reflejan el comportamiento entregado
