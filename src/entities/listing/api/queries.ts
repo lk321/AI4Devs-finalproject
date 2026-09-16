@@ -71,7 +71,7 @@ export async function getSellerListings(sellerId: string) {
   const { data } = await supabase
     .from('listings')
     .select(
-      'id, title, price_cents, status, published_at, created_at, images:listing_images(url, alt, position)',
+      'id, title, price_cents, condition, status, city, published_at, created_at, images:listing_images(url, alt, position)',
     )
     .eq('seller_id', sellerId)
     .order('created_at', { ascending: false })

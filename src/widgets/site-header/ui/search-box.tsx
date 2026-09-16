@@ -1,14 +1,17 @@
 'use client'
 
-import { useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Search } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Input } from '@/shared/ui/input'
 
 export function SearchBox({ className }: { className?: string }) {
   const router = useRouter()
+  const pathname = usePathname()
   const params = useSearchParams()
   const [term, setTerm] = useState(params.get('q') ?? '')
+
+  if (pathname === '/search') return <div className={className} aria-hidden />
 
   function submit(event: FormEvent) {
     event.preventDefault()
