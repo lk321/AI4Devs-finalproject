@@ -14,6 +14,11 @@ Marketplace de compraventa de artículos de segunda mano entre particulares.
 Monolito Next.js: UI, dominio y acceso a datos en una sola base de código
 TypeScript.
 
+> **Estado del repositorio (entrega 1):** sólo documentación y
+> especificaciones. El código de aplicación y las dependencias llegan en la
+> entrega 2, momento en el que los comandos y rutas descritos aquí pasan a ser
+> ejecutables.
+
 ## Comandos
 
 ```bash
