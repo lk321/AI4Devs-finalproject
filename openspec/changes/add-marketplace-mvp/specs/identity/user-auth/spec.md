@@ -56,14 +56,15 @@ la contraseña es incorrecta.
 
 #### Scenario: Intentos repetidos
 
-- **WHEN** se acumulan más de 10 intentos fallidos desde la misma IP en 15
-  minutos
-- **THEN** el sistema rechaza nuevos intentos durante 15 minutos
+- **WHEN** se acumulan más de 10 peticiones de acceso o registro desde la misma
+  IP en 5 minutos
+- **THEN** el sistema rechaza las siguientes hasta que se cierra la ventana
 
 ### Requirement: Sesión persistente
 
-El sistema DEBE mantener la sesión en una cookie `httpOnly`, `secure` y
-`sameSite=lax` con una caducidad de 30 días y DEBE invalidarla al cerrar sesión.
+El sistema DEBE mantener la sesión en cookies `httpOnly`, `secure` y
+`sameSite=lax`, con una caducidad máxima de 30 días desde el inicio de sesión, y
+DEBE invalidarla al cerrar sesión.
 
 #### Scenario: Retorno con sesión vigente
 
