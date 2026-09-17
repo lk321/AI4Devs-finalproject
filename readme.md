@@ -369,6 +369,20 @@ imposible el ciclo entre módulos.
 
 Las reglas 1 y 2 están aplicadas por ESLint: violarlas rompe el build.
 
+**Navegación y prefetching.** La estrategia se apoya en cuatro mecanismos del
+App Router, combinados para que al pulsar un enlace la vista ya esté en el
+cliente:
+
+| Mecanismo | Dónde | Qué consigue |
+| --- | --- | --- |
+| `<Link>` con prefetch automático | tarjetas del catálogo, cabecera, bandeja de mensajes | Next.js precarga la ruta en cuanto el enlace entra en el viewport y prioriza las que muestran intención (hover o toque). |
+| `useRouter().prefetch()` en `onMouseEnter` | paginación del catálogo, conversaciones, acciones del vendedor, buscador de la cabecera | Los botones no son enlaces, así que la precarga se dispara a mano cuando el puntero se acerca. |
+| `loading.tsx` en todas las rutas dinámicas | `/search`, `/listings/[id]`, `/messages`, `/messages/[id]`, `/profile/[alias]`, `/account/listings` | Habilita el **prefetch parcial**: sin él, Next.js omite la precarga de una ruta dinámica. Además da transición inmediata con esqueleto en vez de una pantalla congelada. |
+| Server Components con datos ya resueltos | `_pages/*` | El HTML llega poblado desde el servidor: el cliente no encadena un `fetch` después de montar, así que no hay salto de contenido ni estado de carga en el camino feliz. |
+
+El prefetching automático **sólo actúa en producción** (`bun run build && bun run
+start`); en desarrollo Next.js lo desactiva a propósito.
+
 ### **2.4. Infraestructura y despliegue**
 
 ```mermaid
