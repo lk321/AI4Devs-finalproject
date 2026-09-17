@@ -110,6 +110,14 @@ vacías preparadas para el futuro.
 - La lógica de dominio vive en `entities/*/model` y no importa nada de Next: la
   Server Action valida y delega.
 
+## Búsqueda
+
+El término de búsqueda lo posee el buscador de la cabecera y vive en `?q=`. Se
+confirma al enviar el formulario, **nunca en cada pulsación**: un debounce corto
+sigue disparando una consulta por letra en cuanto la pausa entre teclas supera su
+ventana. Los filtros discretos (categoría, estado, ciudad) sí se aplican al
+instante; los campos de precio esperan 600 ms porque se teclean.
+
 ## Validación
 
 Cada feature define su esquema zod en `model/`. Ese mismo esquema lo consume el

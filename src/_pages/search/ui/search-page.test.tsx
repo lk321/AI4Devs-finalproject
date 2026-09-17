@@ -97,7 +97,6 @@ describe('SearchPage', () => {
       sort: 'price_asc',
       page: 1,
     })
-    expect(screen.getByLabelText('Buscar')).toHaveValue('bicicleta')
     expect(screen.getByLabelText('Nuevo')).toBeChecked()
     expect(screen.getByRole('combobox', { name: 'Ordenar por' })).toHaveTextContent(
       'Precio: de menor a mayor',

@@ -77,7 +77,7 @@ siguiente.
 | 2 | Perfil público | Alias, ciudad, antigüedad, valoración media, operaciones cerradas y anuncios publicados. Nunca expone email ni teléfono. |
 | 3 | Publicación de anuncios | Formulario de tres pasos: artículo, fotos y precio. Hasta 8 imágenes con portada reordenable. Guardado como borrador en cualquier momento. |
 | 4 | Ciclo de vida del anuncio | Estados `draft`, `published`, `reserved`, `sold`, `archived` con transiciones controladas. El precio queda bloqueado mientras el artículo está reservado. |
-| 5 | Búsqueda y filtrado | Texto libre insensible a acentos y mayúsculas, más filtros de categoría, rango de precio, estado de conservación y distancia. Orden por relevancia, precio o fecha. |
+| 5 | Búsqueda y filtrado | Un único buscador en la cabecera, presente en todas las pantallas, que consulta al enviar y no en cada pulsación. Filtros de categoría, rango de precio, estado de conservación y distancia, con orden por relevancia, precio o fecha. |
 | 6 | Búsqueda compartible | Término, filtros, orden y página viajan en la URL: la misma dirección reproduce exactamente el mismo resultado. |
 | 7 | Conversación por anuncio | Un hilo único por anuncio y comprador, con indicador de mensajes sin leer y acceso limitado a los dos participantes. |
 | 8 | Ofertas y reserva | El comprador propone un importe; aceptar la oferta reserva el artículo y deja el resto de ofertas superadas. La reserva se puede liberar. |
@@ -376,6 +376,7 @@ cliente:
 | Mecanismo | Dónde | Qué consigue |
 | --- | --- | --- |
 | `<Link>` con prefetch automático | tarjetas del catálogo, cabecera, bandeja de mensajes | Next.js precarga la ruta en cuanto el enlace entra en el viewport y prioriza las que muestran intención (hover o toque). |
+| Búsqueda por envío explícito | buscador de la cabecera | El término viaja a la URL al pulsar Enter, no en cada tecla: escribir una palabra de nueve letras cuesta **una** consulta al servidor en lugar de nueve. |
 | `useRouter().prefetch()` en `onMouseEnter` | paginación del catálogo, conversaciones, acciones del vendedor, buscador de la cabecera | Los botones no son enlaces, así que la precarga se dispara a mano cuando el puntero se acerca. |
 | `loading.tsx` en todas las rutas dinámicas | `/search`, `/listings/[id]`, `/messages`, `/messages/[id]`, `/profile/[alias]`, `/account/listings` | Habilita el **prefetch parcial**: sin él, Next.js omite la precarga de una ruta dinámica. Además da transición inmediata con esqueleto en vez de una pantalla congelada. |
 | Server Components con datos ya resueltos | `_pages/*` | El HTML llega poblado desde el servidor: el cliente no encadena un `fetch` después de montar, así que no hay salto de contenido ni estado de carga en el camino feliz. |

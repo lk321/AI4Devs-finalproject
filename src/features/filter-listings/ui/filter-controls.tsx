@@ -9,7 +9,6 @@ import { CategoryFilter } from './category-filter'
 import { ConditionFilter } from './condition-filter'
 import { LocationFilter } from './location-filter'
 import { PriceFilter } from './price-filter'
-import { TermFilter } from './term-filter'
 
 export function FilterControls({
   categories,
@@ -22,8 +21,6 @@ export function FilterControls({
 
   return (
     <div className="space-y-5">
-      <TermFilter idPrefix={idPrefix} />
-      <Separator />
       <CategoryFilter categories={categories} idPrefix={idPrefix} />
       <Separator />
       <PriceFilter idPrefix={idPrefix} />

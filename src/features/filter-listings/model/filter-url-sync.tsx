@@ -6,7 +6,7 @@ import { toQueryString } from '@/entities/listing'
 import { toFilterParams } from './store'
 import { useFilterStore } from './context'
 
-const DEBOUNCE_MS = 300
+const DEBOUNCE_MS = 600
 
 export function FilterUrlSync() {
   const router = useRouter()
@@ -23,8 +23,7 @@ export function FilterUrlSync() {
       router.replace(query ? `/search?${query}` : '/search', { scroll: false })
     }
 
-    const debounced = prev.q !== values.q || prev.min !== values.min || prev.max !== values.max
-    if (!debounced) {
+    if (prev.min === values.min && prev.max === values.max) {
       commit()
       return
     }

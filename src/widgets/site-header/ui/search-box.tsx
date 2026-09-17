@@ -1,23 +1,35 @@
 'use client'
 
+import { useState, type FormEvent } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Search } from 'lucide-react'
-import { useState, type FormEvent } from 'react'
 import { Input } from '@/shared/ui/input'
 
 export function SearchBox({ className }: { className?: string }) {
   const router = useRouter()
   const pathname = usePathname()
   const params = useSearchParams()
-  const [term, setTerm] = useState(params.get('q') ?? '')
+  const committed = params.get('q') ?? ''
+  const [term, setTerm] = useState(committed)
+  const [synced, setSynced] = useState(committed)
 
-  if (pathname === '/search') return <div className={className} aria-hidden />
+  if (synced !== committed) {
+    setSynced(committed)
+    setTerm(committed)
+  }
 
   function submit(event: FormEvent) {
     event.preventDefault()
-    const next = new URLSearchParams()
-    if (term.trim()) next.set('q', term.trim())
-    router.push(`/search?${next.toString()}`)
+
+    const next = new URLSearchParams(pathname === '/search' ? params.toString() : '')
+    const trimmed = term.trim()
+
+    if (trimmed) next.set('q', trimmed)
+    else next.delete('q')
+    next.delete('page')
+
+    const query = next.toString()
+    router.push(query ? `/search?${query}` : '/search', { scroll: false })
   }
 
   return (
@@ -32,6 +44,8 @@ export function SearchBox({ className }: { className?: string }) {
         />
         <Input
           id="site-search"
+          name="q"
+          type="search"
           value={term}
           onChange={(event) => setTerm(event.target.value)}
           onFocus={() => router.prefetch('/search')}

@@ -64,7 +64,6 @@ describe('ListingFilters', () => {
       distance: '25',
     })
 
-    expect(screen.getByLabelText('Buscar')).toHaveValue('bici')
     expect(screen.getByLabelText('Precio mínimo')).toHaveValue(50)
     expect(screen.getByLabelText('Precio máximo')).toHaveValue(200)
     expect(screen.getByLabelText('Nuevo')).toBeChecked()
@@ -85,15 +84,36 @@ describe('ListingFilters', () => {
     )
   })
 
-  it('espera 300 ms antes de llevar el texto a la URL', async () => {
+  it('no lleva el precio a la URL en cada pulsacion', async () => {
     const user = userEvent.setup()
     renderFilters()
 
-    await user.type(screen.getByLabelText('Buscar'), 'bici')
+    await user.type(screen.getByLabelText('Precio mínimo'), '150')
     expect(replace).not.toHaveBeenCalled()
 
-    await waitFor(() => expect(replace).toHaveBeenCalledWith('/search?q=bici', { scroll: false }))
+    await waitFor(() =>
+      expect(replace).toHaveBeenCalledWith('/search?min=15000', { scroll: false }),
+    )
     expect(replace).toHaveBeenCalledTimes(1)
+  })
+
+  it('el panel ya no duplica el buscador de la cabecera', () => {
+    renderFilters({ q: 'bici' })
+
+    expect(screen.queryByLabelText('Buscar')).not.toBeInTheDocument()
+  })
+
+  it('conserva el termino de busqueda al cambiar otro filtro', async () => {
+    const user = userEvent.setup()
+    renderFilters({ q: 'bici' })
+
+    await user.click(screen.getByLabelText('Como nuevo'))
+
+    await waitFor(() =>
+      expect(replace).toHaveBeenCalledWith('/search?q=bici&condition=como_nuevo', {
+        scroll: false,
+      }),
+    )
   })
 
   it('no aplica el rango de precio con el mínimo mayor que el máximo', async () => {
@@ -125,7 +145,6 @@ describe('ListingFilters', () => {
     const before = cardRender.mock.calls.length
     expect(before).toBeGreaterThan(0)
 
-    await user.type(screen.getByLabelText('Buscar'), 'bici')
     await user.type(screen.getByLabelText('Precio mínimo'), '50')
     await waitFor(() => expect(replace).toHaveBeenCalled())
     expect(cardRender).toHaveBeenCalledTimes(before)
