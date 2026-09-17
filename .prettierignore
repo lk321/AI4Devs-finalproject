@@ -1,0 +1,8 @@
+.next
+node_modules
+bun.lock
+supabase/.temp
+openspec
+readme.md
+AGENTS.md
+prompts.md

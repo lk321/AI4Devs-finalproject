@@ -1,0 +1,22 @@
+pre-commit:
+  parallel: true
+  commands:
+    format:
+      glob: '*.{ts,tsx,css,json,md}'
+      run: bunx prettier --write {staged_files} && git add {staged_files}
+    lint:
+      glob: '*.{ts,tsx}'
+      run: bunx eslint --fix {staged_files} && git add {staged_files}
+
+pre-push:
+  parallel: true
+  commands:
+    typecheck:
+      run: bun run typecheck
+    test:
+      run: bun run test
+
+commit-msg:
+  commands:
+    commitlint:
+      run: bunx commitlint --edit {1}

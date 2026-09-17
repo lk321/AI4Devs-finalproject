@@ -72,14 +72,41 @@ donde el estado cambia en cada pulsación y un Context provocaría rerenders de
 todo el árbol suscrito. La verdad sobre los datos vive en el servidor: no se
 replica el catálogo en un store de cliente.
 
-### Prisma sobre PostgreSQL
+### Supabase sobre PostgreSQL
 
-El modelo tiene relaciones densas y consultas con varios filtros combinados, que
-es donde un ORM relacional con tipos generados evita la mayor parte de los
-errores. Las migraciones versionadas dan el camino de rollback.
+Supabase aporta en un solo servicio las tres piezas que el MVP necesita fuera de
+la aplicación: PostgreSQL con migraciones versionadas, autenticación con sesión
+gestionada y almacenamiento de imágenes. El CLI levanta el stack completo en
+local con Docker, así que el entorno de desarrollo es el mismo que el de
+producción.
 
-Alternativa descartada: Drizzle, más ligero pero con menos herramienta de
-migración asistida para un proyecto que se entrega en tres hitos.
+Las invariantes viven en la base de datos, no sólo en el código:
+
+- Restricciones `CHECK` y únicas para precio, longitudes, una sola oferta
+  `pending` por conversación y una sola valoración por operación y autor.
+- Disparadores para las transiciones de estado del anuncio, el bloqueo de precio
+  durante la reserva, la sustitución de ofertas y el recálculo de la valoración
+  media.
+- Funciones `security definer` (`start_conversation`, `resolve_offer`,
+  `mark_listing_sold`, `release_reservation`) para las operaciones que deben ser
+  atómicas y comprobar autoría.
+- **Row Level Security activo en todas las tablas**: aunque la clave pública
+  llegue al navegador, la base de datos sólo devuelve lo que la política permite.
+
+Alternativa descartada: Prisma contra una PostgreSQL propia, que obligaría a
+resolver aparte autenticación y almacenamiento de imágenes, y dejaría la
+autorización enteramente en el código de aplicación.
+
+### Autenticación con Supabase Auth
+
+Sesión en cookie gestionada por `@supabase/ssr`, refrescada en `proxy.ts` (el
+antiguo middleware, renombrado en Next.js 16). `supabase/config.toml` fija
+`minimum_password_length = 12`, `timebox = "720h"` (30 días) y
+`sign_in_sign_ups = 10` peticiones por IP cada 5 minutos.
+
+El hash de contraseña lo gestiona Supabase Auth (bcrypt), no la aplicación: se
+sustituye la decisión de Argon2id propio de la entrega 1 por no implementar
+criptografía a mano.
 
 ### Validación en el borde con zod
 
@@ -105,14 +132,15 @@ recorridos críticos: publicar, buscar y cerrar una operación. Cada
   corta por segmento FSD (`ui`, `model`, `api`), nunca por número de líneas.
 - **Sin pasarela de pago, la valoración es la única señal de confianza** → se
   refuerza con identidad verificada por email y reporte manual de anuncios.
-- **La búsqueda por texto con `ILIKE` degrada al crecer el catálogo** → se
-  aísla en `entities/listing/api` para poder sustituirla por búsqueda de texto
-  completo de PostgreSQL sin tocar la UI.
+- **La búsqueda combina texto, filtros y distancia** → se resuelve en una única
+  función SQL `search_listings` con índice GIN sobre `tsvector`, de modo que la
+  UI recibe ya la página ordenada y el total.
+- **RLS mal escrita abre la base de datos** → cada política se acompaña de un
+  test de integración que comprueba el caso negativo, no sólo el positivo.
 
 ## Migration Plan
 
-Proyecto nuevo: no hay migración de datos. Despliegue en Vercel con base de
-datos PostgreSQL gestionada; `prisma migrate deploy` en el paso de build y
-semillas de categorías en el primer arranque. Rollback por reversión del
-despliegue anterior más `prisma migrate resolve` sobre la última migración
-aplicada.
+Proyecto nuevo: no hay migración de datos. Despliegue en Vercel apuntando a un
+proyecto Supabase gestionado; `supabase db push` aplica las migraciones y
+`supabase/seed.sql` carga las categorías. Rollback por reversión del despliegue
+anterior en Vercel más una migración correctiva en Supabase.

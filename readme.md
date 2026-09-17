@@ -30,7 +30,8 @@ verificada y reputación construida sobre operaciones reales.
 
 ### **0.4. URL del proyecto:**
 
-Pendiente de despliegue. Se publicará en Vercel durante la entrega 3.
+Pendiente de despliegue público. Se publicará en Vercel durante la entrega 3.
+La aplicación es ejecutable en local siguiendo las instrucciones de §1.4.
 
 > Puede ser pública o privada, en cuyo caso deberás compartir los accesos de manera segura. Puedes enviarlos a [alvaro@lidr.co](mailto:alvaro@lidr.co) usando algún servicio como [onetimesecret](https://onetimesecret.com/).
 
@@ -76,7 +77,7 @@ siguiente.
 | 2 | Perfil público | Alias, ciudad, antigüedad, valoración media, operaciones cerradas y anuncios publicados. Nunca expone email ni teléfono. |
 | 3 | Publicación de anuncios | Formulario de tres pasos: artículo, fotos y precio. Hasta 8 imágenes con portada reordenable. Guardado como borrador en cualquier momento. |
 | 4 | Ciclo de vida del anuncio | Estados `draft`, `published`, `reserved`, `sold`, `archived` con transiciones controladas. El precio queda bloqueado mientras el artículo está reservado. |
-| 5 | Búsqueda y filtrado | Texto libre insensible a acentos y mayúsculas, más filtros de categoría, rango de precio, estado de conservación y distancia. Orden por relevancia, precio o fecha. |
+| 5 | Búsqueda y filtrado | Un único buscador en la cabecera, presente en todas las pantallas, que consulta al enviar y no en cada pulsación. Filtros de categoría, rango de precio, estado de conservación y distancia, con orden por relevancia, precio o fecha. |
 | 6 | Búsqueda compartible | Término, filtros, orden y página viajan en la URL: la misma dirección reproduce exactamente el mismo resultado. |
 | 7 | Conversación por anuncio | Un hilo único por anuncio y comprador, con indicador de mensajes sin leer y acceso limitado a los dos participantes. |
 | 8 | Ofertas y reserva | El comprador propone un importe; aceptar la oferta reserva el artículo y deja el resto de ofertas superadas. La reserva se puede liberar. |
@@ -89,8 +90,8 @@ automática de contenido.
 ### **1.3. Diseño y experiencia de usuario:**
 
 El material visual (capturas del recorrido completo y videotutorial) se entrega
-en la **entrega 3**, junto con la aplicación desplegada. En esta entrega se
-documenta el recorrido previsto:
+en la **entrega 3**, junto con la aplicación desplegada. El recorrido ya es
+navegable en local desde la entrega 2:
 
 ```
 Aterrizaje (/)
@@ -122,47 +123,63 @@ Tres decisiones de experiencia guían el diseño:
 
 ### **1.4. Instrucciones de instalación:**
 
-**Requisitos:** Bun 1.4 o superior, PostgreSQL 16 o superior (local o en Docker)
-y Git.
+**Requisitos:** Bun 1.4 o superior, Docker en ejecución (para el stack local de
+Supabase) y Git.
 
 ```bash
 # 1. Clonar el repositorio
 git clone https://github.com/lk321/AI4Devs-finalproject.git
 cd AI4Devs-finalproject
 
-# 2. Instalar dependencias (lefthook se instala solo en el postinstall)
+# 2. Instalar dependencias (lefthook instala los hooks en el postinstall)
 bun install
 
-# 3. Configurar el entorno
-cp .env.example .env
-# Editar .env:
-#   DATABASE_URL="postgresql://user:password@localhost:5432/loop_market"
-#   AUTH_SECRET="<cadena aleatoria de 32+ caracteres>"
+# 3. Levantar Supabase en local (PostgreSQL + Auth + Storage + Studio)
+bun run db:start
+#    Copia los valores que imprime el comando:
+#      API URL        -> NEXT_PUBLIC_SUPABASE_URL
+#      publishable key -> NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-# 4. Levantar la base de datos (opcional, si no hay PostgreSQL local)
-docker compose up -d db
+# 4. Configurar el entorno
+cp .env.example .env.local
+#    y pega en .env.local los dos valores del paso anterior
 
-# 5. Aplicar migraciones y semillas de categorías
-bun run db:migrate
-bun run db:seed
+# 5. Aplicar migraciones y semillas (categorías, usuarios y anuncios de demo)
+bun run db:reset
 
 # 6. Arrancar
 bun run dev          # http://localhost:3000
 ```
 
+**Servicios locales:** aplicación en `http://localhost:3000`, API de Supabase en
+`http://127.0.0.1:54321`, Studio en `http://127.0.0.1:54323` y Mailpit en
+`http://127.0.0.1:54324`.
+
+**Usuarios de demostración** (contraseña `loopmarket123`):
+
+| Email | Alias | Ciudad |
+| --- | --- | --- |
+| `ana@loop.test` | `ana_ruiz` | Madrid |
+| `carlos@loop.test` | `carlos_vega` | Alcobendas |
+| `lucia@loop.test` | `lucia_mor` | Barcelona |
+
 **Comprobaciones de calidad:**
 
 ```bash
-bun run lint         # eslint
+bun run lint         # eslint, incluidas las reglas de capas FSD
 bun run format       # prettier --write
 bun run typecheck    # tsc --noEmit
 bun run test         # vitest (unidad e integración)
-bun run test:e2e     # playwright (extremo a extremo)
+bun run build        # build de producción
 ```
 
-> La instalación descrita corresponde al estado objetivo del proyecto. En esta
-> entrega 1 el repositorio contiene únicamente la documentación técnica y las
-> especificaciones; el código se incorpora en la entrega 2.
+**Contra un proyecto Supabase alojado:** crea el proyecto, apunta
+`NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` a sus valores y
+aplica el esquema con `bunx supabase link --project-ref <ref>` seguido de
+`bunx supabase db push`.
+
+> Los tests de extremo a extremo con Playwright y el despliegue se incorporan en
+> la entrega 3.
 
 ---
 
@@ -179,26 +196,27 @@ flowchart TB
 
     subgraph Vercel["Vercel — Next.js 16"]
         direction TB
+        Proxy["proxy.ts<br/>refresco de sesión · cabeceras · rutas privadas"]
         Router["App Router<br/>app/ · routing y re-export"]
         Pages["_pages · widgets<br/>composición de pantalla"]
         Features["features<br/>Server Actions + formularios"]
         Entities["entities<br/>dominio + esquemas zod"]
         Shared["shared<br/>ui · api · lib · config"]
-        Handlers["Route Handlers<br/>/api/auth · /api/uploads · /api/listings"]
     end
 
-    subgraph Datos["Persistencia"]
-        PG[("PostgreSQL<br/>Neon")]
-        Blob[("Blob Storage<br/>imágenes")]
+    subgraph Supabase["Supabase"]
+        Auth["Auth<br/>sesión en cookie"]
+        PG[("PostgreSQL<br/>RLS · triggers · RPC")]
+        Storage[("Storage<br/>bucket listing-images")]
     end
 
-    RSC --> Router
+    RSC --> Proxy --> Router
     CC -- "Server Action" --> Features
-    CC -- "fetch" --> Handlers
     Router --> Pages --> Features --> Entities --> Shared
-    Handlers --> Entities
-    Entities -- "Prisma Client" --> PG
-    Features -- "upload" --> Blob
+    Proxy --> Auth
+    Entities -- "supabase-js" --> PG
+    Features -- "RPC + upload" --> PG
+    Features --> Storage
 ```
 
 **Patrón:** monolito modular con **Feature-Sliced Design v2.1** en el interior.
@@ -213,6 +231,13 @@ Server Components sin exponer endpoints y mutar con Server Actions con tipado de
 extremo a extremo, así que la API HTTP queda reservada para lo que de verdad
 necesita un contrato público.
 
+Supabase aporta en un solo servicio las tres piezas externas que el MVP necesita
+—PostgreSQL con migraciones versionadas, autenticación con sesión gestionada y
+almacenamiento de imágenes— y, sobre todo, permite poner las invariantes **en la
+base de datos**: restricciones, disparadores, funciones `security definer` y Row
+Level Security. Una regla escrita ahí se cumple aunque la escriba mal la
+aplicación.
+
 FSD aporta lo que al App Router le falta: el App Router organiza **rutas**, no
 **funcionalidades**. Con FSD, la respuesta a "¿dónde está el código de publicar
 un anuncio?" es una sola carpeta, y la regla de importación descendente hace
@@ -220,41 +245,48 @@ imposible el ciclo entre módulos.
 
 **Beneficios:**
 
-- Un solo despliegue, un solo `tsconfig`, un solo conjunto de tipos.
+- Un solo despliegue, un solo `tsconfig`, un solo conjunto de tipos, generados
+  además desde el esquema real de la base (`bun run db:types`).
 - Alta cohesión: una funcionalidad completa cabe en un directorio.
 - Dependencias dirigidas: `_app > _pages > widgets > features > entities >
   shared`, sin ciclos posibles.
 - Menos JavaScript en el cliente: Server Components por defecto, `'use client'`
   sólo en las hojas del árbol que lo necesitan.
+- Autorización en la base: aunque la clave pública viaje al navegador, RLS
+  decide qué filas se devuelven.
 
 **Sacrificios asumidos:**
 
 - **Acoplamiento a Next.js.** Las Server Actions son específicas del framework.
   Se mitiga manteniendo la lógica de dominio en `entities/*/model`, sin ningún
   import de Next: la Server Action valida y delega.
+- **Lógica repartida entre SQL y TypeScript.** Los disparadores son eficaces pero
+  menos visibles que el código de aplicación; se documentan en las migraciones y
+  se cubren con tests.
 - **Escalado conjunto.** No se puede escalar la lectura del catálogo por separado
   de la mensajería.
 - **Curva de entrada de FSD.** Convenciones que hay que aprender antes de
   escribir el primer archivo; a cambio, dejan de discutirse en cada revisión.
-- **Vendor lock-in parcial** con Vercel para el despliegue y el almacenamiento de
-  imágenes.
+- **Vendor lock-in parcial** con Vercel y Supabase.
 
 ### **2.2. Descripción de componentes principales:**
 
 | Componente | Tecnología | Responsabilidad |
 | --- | --- | --- |
 | **App Router** (`app/`) | Next.js 16 | Routing, layouts, metadatos y streaming. No contiene lógica: re-exporta desde `_pages`. |
-| **Capa `_pages`** | React 19 Server Components | Compone una pantalla completa a partir de widgets y features. Resuelve los datos del servidor. |
-| **Capa `widgets`** | React 19 | Bloques autónomos reutilizables: catálogo de resultados, hilo de conversación, cabecera. |
-| **Capa `features`** | Server Actions + react-hook-form + zod | Una intención de usuario por slice: autenticarse, publicar, filtrar, ofertar, mensajear. |
-| **Capa `entities`** | TypeScript + zod + Prisma Client | Objetos de negocio (`user`, `listing`) con su modelo, sus invariantes y su acceso a datos. |
-| **Capa `shared`** | shadcn/ui, lucide-react, Tailwind v4 | Componentes sin dominio, cliente Prisma, utilidades y configuración. |
-| **Route Handlers** | Next.js 16 | Contratos HTTP públicos: autenticación, subida de imágenes y la API documentada en §4. |
+| **Proxy** (`proxy.ts`) | Next.js 16 | Lo que antes era el middleware. Refresca la sesión de Supabase en cada petición, aplica cabeceras de seguridad y redirige las rutas privadas al acceso. |
+| **Capa `_app`** | React 19 | Shell de la aplicación: proveedores de tema, sesión, tooltips y avisos. |
+| **Capa `_pages`** | React 19 Server Components | Compone una pantalla completa a partir de widgets y features. Resuelve los datos en el servidor. |
+| **Capa `widgets`** | React 19 | Bloques autónomos reutilizables: cabecera, catálogo de resultados, hilo de conversación. |
+| **Capa `features`** | Server Actions + react-hook-form + zod | Una intención de usuario por slice: autenticarse, publicar, filtrar, ofertar, mensajear, valorar. |
+| **Capa `entities`** | TypeScript + zod + supabase-js | Objetos de negocio (`user`, `listing`) con su modelo, sus invariantes y su acceso a datos. |
+| **Capa `shared`** | shadcn/ui, lucide-react, Tailwind v4 | Componentes sin dominio, clientes de Supabase, utilidades y entorno validado. |
+| **Base de datos** | PostgreSQL 17 (Supabase) | Esquema, restricciones, disparadores, funciones RPC y políticas RLS. Migraciones versionadas en `supabase/migrations/`. |
+| **Autenticación** | Supabase Auth | Registro, acceso, hash de contraseña y sesión en cookie, con caducidad y límite de intentos configurados en `supabase/config.toml`. |
+| **Almacenamiento** | Supabase Storage | Bucket `listing-images` con límite de 5 MB, lista blanca de tipos y política de escritura por usuario. |
 | **Estado de cliente** | Context API + zustand | Context para sesión y tema; zustand para el panel de filtros, donde cada pulsación cambia el estado. |
-| **Persistencia** | PostgreSQL 16 + Prisma | Esquema, migraciones versionadas y consultas tipadas. |
-| **Almacenamiento de imágenes** | Blob storage | Imágenes de anuncios servidas por CDN y optimizadas por `next/image`. |
-| **Calidad** | ESLint, Prettier, lefthook, commitlint | Lint y formato en `pre-commit`, typecheck y tests en `pre-push`, formato de commit en `commit-msg`. |
-| **Tests** | Vitest, Testing Library, Playwright | Unidad e integración junto al código; E2E sobre los tres recorridos críticos. |
+| **Calidad** | ESLint, Prettier, lefthook, commitlint | Formato y lint en `pre-commit`, typecheck y tests en `pre-push`, formato de commit en `commit-msg`. |
+| **Tests** | Vitest, Testing Library | Unidad e integración junto al código. Playwright llega en la entrega 3. |
 
 ### **2.3. Descripción de alto nivel del proyecto y estructura de ficheros**
 
@@ -290,19 +322,19 @@ imposible el ciclo entre módulos.
 │   ├── entities/
 │   │   ├── user/
 │   │   │   ├── model/          # tipos, esquemas zod, invariantes
-│   │   │   ├── api/            # consultas Prisma
+│   │   │   ├── api/            # consultas a Supabase
 │   │   │   ├── ui/             # tarjeta de perfil, avatar
 │   │   │   └── index.ts
 │   │   └── listing/
 │   └── shared/
 │       ├── ui/                 # shadcn/ui
-│       ├── api/                # cliente Prisma
+│       ├── api/                # clientes de Supabase + tipos generados
 │       ├── lib/                # utilidades sin dominio
 │       └── config/             # entorno validado con zod
-├── prisma/
-│   ├── schema.prisma
+├── supabase/
+│   ├── config.toml
 │   ├── migrations/
-│   └── seed.ts
+│   └── seed.sql
 ├── e2e/                        # Playwright
 ├── openspec/                   # especificaciones del producto
 │   ├── config.yaml
@@ -333,55 +365,77 @@ imposible el ciclo entre módulos.
 3. Todo slice expone su API pública por `index.ts`; nadie accede a rutas
    internas.
 4. El código exclusivo de servidor se exporta por `index.server.ts`, para que el
-   grafo de cliente no arrastre Prisma ni secretos.
+   grafo de cliente no arrastre el cliente de servidor ni los secretos.
 
 Las reglas 1 y 2 están aplicadas por ESLint: violarlas rompe el build.
+
+**Navegación y prefetching.** La estrategia se apoya en cuatro mecanismos del
+App Router, combinados para que al pulsar un enlace la vista ya esté en el
+cliente:
+
+| Mecanismo | Dónde | Qué consigue |
+| --- | --- | --- |
+| `<Link>` con prefetch automático | tarjetas del catálogo, cabecera, bandeja de mensajes | Next.js precarga la ruta en cuanto el enlace entra en el viewport y prioriza las que muestran intención (hover o toque). |
+| Búsqueda por envío explícito | buscador de la cabecera | El término viaja a la URL al pulsar Enter, no en cada tecla: escribir una palabra de nueve letras cuesta **una** consulta al servidor en lugar de nueve. |
+| `useRouter().prefetch()` en `onMouseEnter` | paginación del catálogo, conversaciones, acciones del vendedor, buscador de la cabecera | Los botones no son enlaces, así que la precarga se dispara a mano cuando el puntero se acerca. |
+| `loading.tsx` en todas las rutas dinámicas | `/search`, `/listings/[id]`, `/messages`, `/messages/[id]`, `/profile/[alias]`, `/account/listings` | Habilita el **prefetch parcial**: sin él, Next.js omite la precarga de una ruta dinámica. Además da transición inmediata con esqueleto en vez de una pantalla congelada. |
+| Server Components con datos ya resueltos | `_pages/*` | El HTML llega poblado desde el servidor: el cliente no encadena un `fetch` después de montar, así que no hay salto de contenido ni estado de carga en el camino feliz. |
+
+El prefetching automático **sólo actúa en producción** (`bun run build && bun run
+start`); en desarrollo Next.js lo desactiva a propósito.
 
 ### **2.4. Infraestructura y despliegue**
 
 ```mermaid
 flowchart LR
-    Dev["Local<br/>bun run dev"] -- push --> GH["GitHub<br/>feature/entrega-N-AO"]
-    GH --> CI["GitHub Actions<br/>lint · typecheck · test · e2e"]
+    Dev["Local<br/>bun run dev + supabase start"] -- push --> GH["GitHub<br/>feature/entrega-N-AO"]
+    GH --> CI["GitHub Actions<br/>lint · typecheck · test · build"]
     CI -- "PR verde" --> Prev["Vercel Preview<br/>URL por PR"]
     Prev -- "merge a main" --> Prod["Vercel Production"]
-    Prod --> Mig["prisma migrate deploy"]
-    Mig --> PG[("PostgreSQL gestionada")]
-    Prod --> Blob[("Blob Storage")]
+    Prod --> SB["Supabase gestionado"]
+    SB --> PG[("PostgreSQL + RLS")]
+    SB --> ST[("Storage")]
+    SB --> AU["Auth"]
 ```
+
+**Entorno local.** `bun run db:start` levanta con Docker el stack completo de
+Supabase: PostgreSQL, Auth, Storage, Studio y Mailpit. `bun run db:reset` aplica
+las migraciones de `supabase/migrations/` y la semilla de `supabase/seed.sql`, de
+modo que el entorno de desarrollo reproduce el de producción, no lo aproxima.
 
 **Proceso de despliegue:**
 
-1. Cada `push` a una rama de entrega dispara el pipeline: `lint`, `typecheck`,
-   `test` y `test:e2e`. Los hooks de `lefthook` ya han ejecutado lint y formato
-   en local, así que el pipeline rara vez falla por estilo.
-2. Vercel genera un **despliegue de vista previa** por Pull Request, con su
-   propia URL y su rama de base de datos, para revisar el cambio funcionando.
-3. El merge a `main` promociona a producción. El paso de build ejecuta
-   `prisma migrate deploy`, que aplica sólo las migraciones pendientes.
-4. **Rollback:** promoción del despliegue anterior en Vercel y, si la migración
-   fue destructiva, `prisma migrate resolve` sobre la última migración aplicada.
+1. Los hooks de `lefthook` ejecutan formato y lint en `pre-commit`, y typecheck y
+   tests en `pre-push`, así que el pipeline rara vez falla por estilo.
+2. Cada `push` dispara `lint`, `typecheck`, `test` y `build`.
+3. Vercel genera un **despliegue de vista previa** por Pull Request.
+4. El merge a `main` promociona a producción. El esquema se aplica al proyecto
+   Supabase con `supabase db push`.
+5. **Rollback:** promoción del despliegue anterior en Vercel; si la migración fue
+   destructiva, una migración correctiva en Supabase.
 
-**Entornos:** `local` (PostgreSQL en Docker), `preview` (rama de base de datos
-efímera por PR) y `production`. Los secretos viven en las variables de entorno de
-Vercel y se validan con zod al arrancar: si falta una, la aplicación no levanta.
+**Entornos:** `local` (Supabase en Docker), `preview` (proyecto Supabase de
+pruebas) y `production`. Los secretos viven en las variables de entorno de Vercel
+y **se validan con zod al arrancar** (`src/shared/config/env.ts`): si falta una,
+la aplicación no levanta.
 
 ### **2.5. Seguridad**
 
 | Práctica | Implementación |
 | --- | --- |
-| **Contraseñas** | Hash Argon2id con sal por usuario. Nunca se registran en logs ni se devuelven en ninguna respuesta. |
-| **Sesión** | Cookie `httpOnly`, `secure`, `sameSite=lax`, 30 días. Inaccesible desde JavaScript, lo que anula el robo de sesión por XSS. |
-| **Enumeración de cuentas** | El error de inicio de sesión es idéntico para email inexistente y contraseña incorrecta: *"email o contraseña incorrectos"*. |
-| **Fuerza bruta** | Más de 10 intentos fallidos desde la misma IP en 15 minutos bloquean nuevos intentos durante 15 minutos. |
-| **Validación de entrada** | Esquema zod único por feature: lo usa el formulario en cliente y lo vuelve a parsear la Server Action en servidor. El cliente nunca es la única barrera. Un precio negativo enviado a mano se rechaza en el servidor. |
-| **Autorización** | Toda mutación comprueba autoría antes de escribir: editar un anuncio ajeno o aceptar una oferta de la que no eres vendedor devuelve error de autorización, no un 404 genérico que dé pistas. |
-| **Acceso a conversaciones** | Sólo los dos participantes pueden leer un hilo; el resto recibe error de autorización. |
-| **Inyección SQL** | Consultas parametrizadas por Prisma. No se construye SQL por concatenación. |
-| **Subida de archivos** | Lista blanca de tipos (JPEG, PNG, WebP), 5 MB por archivo, máximo 8 por anuncio. El tipo se verifica por contenido, no por extensión. |
-| **Datos personales** | El perfil público expone alias, ciudad y reputación. Email y teléfono no salen nunca de la base de datos. |
-| **Secretos** | Variables de entorno validadas con zod al arrancar. `.env*` está en `.gitignore`. |
-| **Cabeceras** | CSP, `X-Content-Type-Options`, `Referrer-Policy` y HSTS desde el middleware. |
+| **Row Level Security** | Activo en las ocho tablas. Un anuncio en `draft` sólo lo devuelve la base a su autor; un hilo de conversación, sólo a sus dos participantes. La clave pública del navegador no da acceso a nada que la política no permita. |
+| **Contraseñas** | Las gestiona Supabase Auth con hash bcrypt: la aplicación nunca las ve, ni las registra, ni las devuelve. Mínimo de 12 caracteres (`minimum_password_length = 12`). |
+| **Sesión** | Cookies `httpOnly`, `secure`, `sameSite=lax` emitidas por Supabase y refrescadas en `proxy.ts`. Caducidad máxima de 30 días (`timebox = "720h"`). Inaccesibles desde JavaScript, lo que anula el robo de sesión por XSS. |
+| **Enumeración de cuentas** | El error de acceso es idéntico para email inexistente y contraseña incorrecta: *"Email o contraseña incorrectos"*. |
+| **Fuerza bruta** | `sign_in_sign_ups = 10`: como máximo 10 peticiones de acceso o registro por IP cada 5 minutos. |
+| **Validación de entrada** | Esquema zod único por feature: lo usa el formulario en cliente y lo vuelve a parsear la Server Action en servidor. Además, la base impone `CHECK` sobre precio, longitudes y puntuaciones. Un precio negativo enviado a mano se rechaza tres veces. |
+| **Autorización** | Comprobada en la base, no sólo en el código: las funciones `resolve_offer`, `mark_listing_sold` y `release_reservation` verifican que quien llama es el vendedor antes de escribir. |
+| **Transiciones de estado** | Un disparador rechaza cualquier transición fuera de la máquina de estados y el cambio de precio con el anuncio reservado, aunque la aplicación lo intente. |
+| **Subida de archivos** | Bucket `listing-images` con lista blanca (`image/jpeg`, `image/png`, `image/webp`), 5 MB por archivo y política que exige que la ruta empiece por el identificador del propio usuario. |
+| **Datos personales** | Las consultas de perfil seleccionan una lista explícita de columnas públicas: email y teléfono no salen nunca de la base. |
+| **Secretos** | Variables de entorno validadas con zod al arrancar. `.env*` está en `.gitignore`. Sólo se publica al navegador la clave `anon`, cuyo alcance lo limita RLS. |
+| **Cabeceras** | `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options` y `Permissions-Policy` aplicadas en `proxy.ts`. |
+| **Redirecciones** | El parámetro `?next=` del acceso sólo se acepta si es una ruta interna, para evitar redirección abierta. |
 
 ### **2.6. Tests**
 
@@ -390,39 +444,28 @@ La especificación es la fuente de los tests: cada `#### Scenario:` de
 
 **Unidad (Vitest).** Invariantes de dominio sin tocar la base de datos:
 
-- El esquema de anuncio rechaza títulos de menos de 5 caracteres, precios no
-  positivos y precios de 100.000 € o más.
-- La máquina de estados acepta `published → reserved` y rechaza `draft → sold`.
-- La regla de ofertas marca como `superseded` la anterior cuando llega una nueva.
+- `listingDraftSchema` rechaza títulos de menos de 5 caracteres, precios no
+  positivos, precios de 100.000 € o más y más de 8 imágenes.
+- `canTransition` acepta `published → reserved` y rechaza `draft → sold`.
+- `parseSearchParams` ignora un rango de precio invertido, tolera un criterio de
+  orden desconocido y acepta condiciones separadas por coma.
+- `toQueryString` omite los valores por defecto y serializa sólo lo activo.
 
 **Componente (Testing Library).** Comportamiento observable por rol accesible,
-nunca por clase CSS:
+nunca por clase CSS: formularios que no avanzan con campos inválidos, errores
+mostrados junto a su control, y el panel de filtros que no rerenderiza las
+tarjetas de resultado al cambiar un filtro.
 
-- El formulario de publicación no avanza de paso con campos inválidos y muestra
-  cada error junto a su control.
-- Cambiar un filtro de búsqueda no rerenderiza las tarjetas de resultado
-  (verificación de la elección de zustand frente a Context).
+**Servidor.** Las Server Actions se prueban contra entrada manipulada: precio
+negativo, autoría ajena, oferta superior al precio, mensaje vacío o de más de
+1000 caracteres.
 
-**Integración.** Contra una base de datos real en Docker:
+**Base de datos.** Las restricciones se verifican contra la instancia local:
+alias duplicado, segunda conversación del mismo comprador sobre el mismo anuncio,
+segunda oferta pendiente, valoración duplicada y transición de estado inválida.
 
-- La inserción de un email o un alias duplicado falla por restricción única.
-- Una segunda conversación del mismo comprador sobre el mismo anuncio reutiliza
-  el hilo existente.
-- Aceptar una oferta reserva el anuncio y marca el resto como `superseded` en la
-  misma transacción.
-
-**Extremo a extremo (Playwright).** Los tres recorridos críticos:
-
-1. **Publicar:** registrarse, completar los tres pasos con dos imágenes,
-   publicar y ver el anuncio en el catálogo.
-2. **Buscar:** filtrar por categoría y rango de precio, recargar la página y
-   comprobar que los filtros se conservan.
-3. **Cerrar:** contactar, ofertar, aceptar la oferta, marcar como vendido y
-   valorar.
-
-**Seguridad.** Casos negativos como tests de primera clase: precio negativo
-enviado sin pasar por el formulario, edición de un anuncio ajeno y lectura de una
-conversación en la que no se participa.
+**Extremo a extremo (Playwright).** Llega en la entrega 3, sobre los tres
+recorridos críticos: publicar, buscar y cerrar una operación.
 
 ---
 
@@ -430,14 +473,20 @@ conversación en la que no se participa.
 
 ### **3.1. Diagrama del modelo de datos:**
 
+Las credenciales viven en el esquema `auth` que gestiona Supabase. `PROFILE` es
+la proyección pública de `auth.users`, enlazada por clave primaria compartida y
+creada por el disparador `handle_new_user`. Las ocho tablas de `public` tienen
+**Row Level Security activo**.
+
 ```mermaid
 erDiagram
-    USER ||--o{ LISTING : "publica"
-    USER ||--o{ CONVERSATION : "inicia como comprador"
-    USER ||--o{ MESSAGE : "escribe"
-    USER ||--o{ OFFER : "propone"
-    USER ||--o{ REVIEW : "emite"
-    USER ||--o{ REVIEW : "recibe"
+    AUTH_USERS ||--|| PROFILE : "credenciales de"
+    PROFILE ||--o{ LISTING : "publica"
+    PROFILE ||--o{ CONVERSATION : "inicia como comprador"
+    PROFILE ||--o{ MESSAGE : "escribe"
+    PROFILE ||--o{ OFFER : "propone"
+    PROFILE ||--o{ REVIEW : "emite"
+    PROFILE ||--o{ REVIEW : "recibe"
     CATEGORY ||--o{ LISTING : "clasifica"
     CATEGORY ||--o{ CATEGORY : "contiene"
     LISTING ||--o{ LISTING_IMAGE : "muestra"
@@ -446,12 +495,17 @@ erDiagram
     CONVERSATION ||--o{ MESSAGE : "contiene"
     CONVERSATION ||--o{ OFFER : "registra"
 
-    USER {
-        uuid id PK
+    AUTH_USERS {
+        uuid id PK "gestionado por Supabase Auth"
         citext email UK "NOT NULL"
-        citext alias UK "NOT NULL, 3-24 car."
-        varchar password_hash "NOT NULL, Argon2id"
-        varchar city "NOT NULL"
+        varchar encrypted_password "NOT NULL, bcrypt"
+        timestamptz email_confirmed_at "NULL"
+    }
+
+    PROFILE {
+        uuid id PK "FK -> auth.users.id, ON DELETE CASCADE"
+        citext alias UK "NOT NULL, 3-24 alfanuméricos"
+        text city "NOT NULL"
         decimal latitude "NULL, 9,6"
         decimal longitude "NULL, 9,6"
         numeric rating_average "NULL, 3,2 (1.00-5.00)"
@@ -470,7 +524,7 @@ erDiagram
 
     LISTING {
         uuid id PK
-        uuid seller_id FK "NOT NULL, USER.id"
+        uuid seller_id FK "NOT NULL, PROFILE.id"
         uuid category_id FK "NOT NULL, CATEGORY.id"
         varchar title "NOT NULL, 5-80 car."
         text description "NOT NULL, 20-2000 car."
@@ -482,8 +536,9 @@ erDiagram
         decimal longitude "NOT NULL, 9,6"
         timestamptz published_at "NULL"
         timestamptz sold_at "NULL"
-        uuid buyer_id FK "NULL, USER.id"
+        uuid buyer_id FK "NULL, PROFILE.id"
         integer sold_price_cents "NULL"
+        tsvector search_vector "generada, índice GIN"
         timestamptz created_at "NOT NULL, default now()"
         timestamptz updated_at "NOT NULL"
     }
@@ -500,7 +555,7 @@ erDiagram
     CONVERSATION {
         uuid id PK
         uuid listing_id FK "NOT NULL, LISTING.id"
-        uuid buyer_id FK "NOT NULL, USER.id"
+        uuid buyer_id FK "NOT NULL, PROFILE.id"
         timestamptz buyer_read_at "NULL"
         timestamptz seller_read_at "NULL"
         timestamptz created_at "NOT NULL, default now()"
@@ -509,7 +564,7 @@ erDiagram
     MESSAGE {
         uuid id PK
         uuid conversation_id FK "NOT NULL, CONVERSATION.id, ON DELETE CASCADE"
-        uuid sender_id FK "NOT NULL, USER.id"
+        uuid sender_id FK "NOT NULL, PROFILE.id"
         text body "NOT NULL, 1-1000 car."
         timestamptz created_at "NOT NULL, default now()"
     }
@@ -517,7 +572,7 @@ erDiagram
     OFFER {
         uuid id PK
         uuid conversation_id FK "NOT NULL, CONVERSATION.id"
-        uuid buyer_id FK "NOT NULL, USER.id"
+        uuid buyer_id FK "NOT NULL, PROFILE.id"
         integer amount_cents "NOT NULL, > 0 y <= LISTING.price_cents"
         offer_status status "NOT NULL, default pending"
         timestamptz resolved_at "NULL"
@@ -527,8 +582,8 @@ erDiagram
     REVIEW {
         uuid id PK
         uuid listing_id FK "NOT NULL, LISTING.id"
-        uuid author_id FK "NOT NULL, USER.id"
-        uuid subject_id FK "NOT NULL, USER.id"
+        uuid author_id FK "NOT NULL, PROFILE.id"
+        uuid subject_id FK "NOT NULL, PROFILE.id"
         smallint score "NOT NULL, 1-5"
         varchar comment "NULL, <= 500 car."
         timestamptz created_at "NOT NULL, default now()"
@@ -537,26 +592,31 @@ erDiagram
 
 ### **3.2. Descripción de entidades principales:**
 
-#### USER
+#### PROFILE
 
-Persona registrada. Actúa indistintamente como vendedora y como compradora: no
-hay roles separados.
+Proyección pública de una persona registrada. Las credenciales (email y hash de
+contraseña) viven en `auth.users`, gestionada por Supabase Auth; `PROFILE`
+comparte su clave primaria y la crea el disparador `handle_new_user`. Un usuario
+actúa indistintamente como vendedor y como comprador: no hay roles separados.
 
 | Atributo | Tipo | Restricciones | Descripción |
 | --- | --- | --- | --- |
-| `id` | `uuid` | **PK** | Identificador. |
-| `email` | `citext` | **UNIQUE**, NOT NULL | Credencial de acceso. Nunca es público. |
-| `alias` | `citext` | **UNIQUE**, NOT NULL, 3-24 alfanuméricos | Identidad pública y segmento de URL del perfil. |
-| `password_hash` | `varchar(255)` | NOT NULL | Argon2id con sal por usuario. |
-| `city` | `varchar(80)` | NOT NULL | Ciudad declarada, base del filtro por distancia. |
-| `latitude` / `longitude` | `decimal(9,6)` | NULL | Centroide de la ciudad, no la ubicación exacta. |
-| `rating_average` | `numeric(3,2)` | NULL, 1.00-5.00 | Media de las valoraciones recibidas. `NULL` mientras no hay ninguna. |
-| `closed_deals` | `integer` | NOT NULL, default 0 | Operaciones cerradas como comprador o vendedor. |
+| `id` | `uuid` | **PK**, **FK** → `auth.users.id`, ON DELETE CASCADE | Mismo identificador que la cuenta de autenticación. |
+| `alias` | `citext` | **UNIQUE**, NOT NULL, `^[a-zA-Z0-9_]{3,24}$` | Identidad pública y segmento de URL del perfil. |
+| `city` | `text` | NOT NULL | Ciudad declarada, base del filtro por distancia. |
+| `latitude` / `longitude` | `numeric(9,6)` | NULL | Centroide de la ciudad, no la ubicación exacta. |
+| `rating_average` | `numeric(3,2)` | NULL, 1.00-5.00 | Media de las valoraciones recibidas, recalculada por disparador. `NULL` mientras no hay ninguna. |
+| `closed_deals` | `integer` | NOT NULL, default 0 | Operaciones cerradas, incrementado por disparador al marcar una venta. |
 | `created_at` | `timestamptz` | NOT NULL | Antigüedad mostrada en el perfil. |
+| `updated_at` | `timestamptz` | NOT NULL | Mantenido por disparador. |
 
-**Relaciones:** 1:N con `LISTING` (como vendedor y, opcionalmente, como
-comprador), `CONVERSATION`, `MESSAGE`, `OFFER` y `REVIEW` (como autor y como
-sujeto).
+**Políticas RLS:** lectura pública; inserción y actualización sólo del propio
+perfil (`auth.uid() = id`). El email nunca está en esta tabla, así que ninguna
+consulta pública puede filtrarlo.
+
+**Relaciones:** 1:1 con `auth.users`; 1:N con `LISTING` (como vendedor y,
+opcionalmente, como comprador), `CONVERSATION`, `MESSAGE`, `OFFER` y `REVIEW`
+(como autor y como sujeto).
 
 #### CATEGORY
 
@@ -599,10 +659,22 @@ resultado de la operación.
 AND sold_at IS NOT NULL AND sold_price_cents IS NOT NULL))` y
 `CHECK (buyer_id <> seller_id)`.
 
+**Columna generada:** `search_vector tsvector` calculada como
+`to_tsvector('spanish', immutable_unaccent(title || ' ' || description))`, lo que
+hace la búsqueda insensible a acentos y mayúsculas sin trabajo en la aplicación.
+
 **Índices:** `(status, published_at DESC)` para el catálogo,
-`(category_id, price_cents)` para el filtro combinado más frecuente, y un índice
-GIN sobre `to_tsvector('spanish', title || ' ' || description)` para la búsqueda
-por texto.
+`(category_id, price_cents)` para el filtro combinado más frecuente,
+`(seller_id, status)` para el panel del vendedor y un índice GIN sobre
+`search_vector` para la búsqueda por texto.
+
+**Disparadores:** `enforce_listing_transition` rechaza cualquier transición fuera
+de la máquina de estados y el cambio de precio con el anuncio en `reserved`;
+`require_listing_images` impide publicar un borrador sin imágenes;
+`count_closed_deals` incrementa el contador de ambas partes al pasar a `sold`.
+
+**Políticas RLS:** lectura pública de `published`, `reserved` y `sold`, más los
+propios en cualquier estado; inserción, actualización y borrado sólo del autor.
 
 **Relaciones:** N:1 con `USER` y `CATEGORY`; 1:N con `LISTING_IMAGE` (borrado en
 cascada) y `CONVERSATION`; 1:0..2 con `REVIEW`.
@@ -636,6 +708,9 @@ Hilo entre el comprador y el vendedor sobre un anuncio concreto.
 y comprador, que es la regla que impide duplicar conversaciones. El vendedor se
 deduce de `LISTING.seller_id` y no se duplica aquí.
 
+**Políticas RLS:** sólo los dos participantes leen la conversación y sus
+mensajes; la función `is_listing_participant` centraliza esa comprobación.
+
 #### MESSAGE
 
 Mensaje de texto dentro de una conversación.
@@ -662,7 +737,9 @@ Propuesta de precio del comprador dentro de una conversación.
 | `resolved_at` | `timestamptz` | NULL | Momento de aceptación, rechazo o sustitución. |
 
 **Restricciones:** índice único parcial sobre `(conversation_id)` donde
-`status = 'pending'` — sólo una oferta viva por conversación.
+`status = 'pending'` — sólo una oferta viva por conversación. El disparador
+`enforce_offer_rules` comprueba que el anuncio admite ofertas, que el importe no
+supera el precio y marca como `superseded` la oferta pendiente anterior.
 
 #### REVIEW
 
@@ -678,229 +755,210 @@ Valoración emitida tras cerrar una operación.
 | `comment` | `varchar(500)` | NULL | Comentario opcional. |
 
 **Restricciones:** **UNIQUE** `(listing_id, author_id)` — una sola valoración por
-operación y autor; `CHECK (author_id <> subject_id)`. La ventana de 30 días desde
-`LISTING.sold_at` se aplica en la capa de dominio.
+operación y autor; `CHECK (author_id <> subject_id)`. La política RLS de
+inserción exige además que el anuncio esté en `sold`, que hayan pasado menos de
+30 días desde `sold_at` y que autor y sujeto sean las dos partes de la operación:
+la ventana no depende del código de aplicación. El disparador
+`recalculate_rating` actualiza la media del perfil valorado.
 
 ---
 
 ## 4. Especificación de la API
 
-Tres endpoints públicos. El resto de mutaciones usa Server Actions, con tipado
-de extremo a extremo y sin contrato HTTP que mantener.
+Las mutaciones de la aplicación viajan por **Server Actions**, con tipado de
+extremo a extremo y sin contrato HTTP que mantener. El contrato HTTP público es
+el que expone Supabase sobre PostgREST: las funciones RPC definidas en las
+migraciones. Autenticación por `Authorization: Bearer <access_token>` más la
+cabecera `apikey`; **Row Level Security decide qué filas devuelve cada llamada**.
+
+Estos son los tres endpoints principales.
 
 ```yaml
 openapi: 3.1.0
 info:
   title: Loop Market API
   version: 1.0.0
+  description: Funciones RPC expuestas por PostgREST sobre el esquema public.
 servers:
-  - url: https://loop-market.vercel.app/api
+  - url: https://<project-ref>.supabase.co/rest/v1
+  - url: http://127.0.0.1:54321/rest/v1
 
 paths:
-  /listings:
-    get:
+  /rpc/search_listings:
+    post:
       summary: Buscar anuncios publicados
-      description: Devuelve los anuncios en estado published o reserved que cumplen los filtros. No requiere sesión.
-      parameters:
-        - { name: q, in: query, schema: { type: string, maxLength: 80 }, description: Texto libre en título y descripción, insensible a mayúsculas y acentos }
-        - { name: category, in: query, schema: { type: string }, description: Slug de categoría }
-        - { name: minPrice, in: query, schema: { type: integer, minimum: 0 }, description: Precio mínimo en céntimos }
-        - { name: maxPrice, in: query, schema: { type: integer, minimum: 0 }, description: Precio máximo en céntimos }
-        - { name: condition, in: query, schema: { type: string, enum: [nuevo, como_nuevo, bueno, aceptable, para_piezas] } }
-        - { name: city, in: query, schema: { type: string } }
-        - { name: distanceKm, in: query, schema: { type: integer, minimum: 1, maximum: 500 } }
-        - { name: sort, in: query, schema: { type: string, enum: [relevance, price_asc, price_desc, newest], default: relevance } }
-        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
-      responses:
-        '200':
-          description: Página de resultados
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [items, total, page, pageSize]
-                properties:
-                  items:
-                    type: array
-                    items: { $ref: '#/components/schemas/ListingSummary' }
-                  total: { type: integer }
-                  page: { type: integer }
-                  pageSize: { type: integer, const: 24 }
-
-    post:
-      summary: Crear un anuncio
-      description: Crea un anuncio en estado draft a nombre del usuario autenticado.
-      security: [{ sessionCookie: [] }]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/ListingInput' }
-      responses:
-        '201':
-          description: Anuncio creado
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/Listing' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '422': { $ref: '#/components/responses/ValidationError' }
-
-  /listings/{id}/offers:
-    post:
-      summary: Ofertar por un anuncio
-      description: Registra una oferta del comprador. Marca como superseded cualquier oferta pendiente previa del mismo comprador.
-      security: [{ sessionCookie: [] }]
-      parameters:
-        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      description: >-
+        Devuelve una página de anuncios en estado published o reserved que cumplen
+        los filtros, con la distancia al origen y el total de coincidencias en
+        cada fila. No requiere sesión.
+      security: [{ apiKey: [] }]
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [amountCents]
               properties:
-                amountCents: { type: integer, minimum: 1, description: No puede superar el precio del anuncio }
-                message: { type: string, maxLength: 1000 }
+                search_term: { type: string, nullable: true, description: Texto libre, insensible a acentos y mayúsculas }
+                category_slug: { type: string, nullable: true }
+                min_price: { type: integer, nullable: true, description: Céntimos }
+                max_price: { type: integer, nullable: true, description: Céntimos }
+                conditions:
+                  type: array
+                  nullable: true
+                  items: { type: string, enum: [nuevo, como_nuevo, bueno, aceptable, para_piezas] }
+                origin_lat: { type: number, nullable: true }
+                origin_lng: { type: number, nullable: true }
+                max_distance_km: { type: integer, nullable: true, minimum: 1, maximum: 500 }
+                sort_by: { type: string, enum: [relevance, price_asc, price_desc, newest], default: relevance }
+                page_number: { type: integer, minimum: 1, default: 1 }
+                page_size: { type: integer, default: 24 }
       responses:
-        '201':
-          description: Oferta registrada
+        '200':
+          description: Página de resultados
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Offer' }
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ListingSummary' }
+
+  /rpc/start_conversation:
+    post:
+      summary: Abrir o recuperar la conversación de un anuncio
+      description: >-
+        Idempotente: si el comprador ya tiene un hilo sobre ese anuncio devuelve
+        el existente. Rechaza al propio vendedor y los anuncios que ya no admiten
+        mensajes.
+      security: [{ sessionBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [target_listing]
+              properties:
+                target_listing: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Identificador de la conversación
+          content:
+            application/json:
+              schema: { type: string, format: uuid }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { description: El vendedor no puede ofertar por su propio anuncio }
-        '409': { description: El anuncio no admite ofertas en su estado actual }
-        '422': { $ref: '#/components/responses/ValidationError' }
+        '403': { description: El vendedor no puede conversar con su propio anuncio }
+        '400': { description: El anuncio ya no admite mensajes }
+
+  /rpc/resolve_offer:
+    post:
+      summary: Aceptar o rechazar una oferta
+      description: >-
+        Sólo el vendedor del anuncio. Aceptar deja el anuncio en reserved, fija el
+        comprador y el importe acordado, y marca como superseded el resto de
+        ofertas pendientes, todo en la misma transacción.
+      security: [{ sessionBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [target_offer, accept]
+              properties:
+                target_offer: { type: string, format: uuid }
+                accept: { type: boolean }
+      responses:
+        '204': { description: Oferta resuelta }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { description: Solo el vendedor resuelve la oferta }
+        '404': { description: Oferta no encontrada o ya resuelta }
 
 components:
   securitySchemes:
-    sessionCookie:
+    apiKey:
       type: apiKey
-      in: cookie
-      name: lm_session
+      in: header
+      name: apikey
+    sessionBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
 
   responses:
     Unauthorized:
       description: Sesión requerida o expirada
-    ValidationError:
-      description: Entrada inválida
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              message: { type: string }
-              issues:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    path: { type: string }
-                    message: { type: string }
 
   schemas:
     ListingSummary:
       type: object
-      required: [id, title, priceCents, condition, status, city, coverUrl]
+      required: [id, title, price_cents, condition, status, city, total_count]
       properties:
         id: { type: string, format: uuid }
         title: { type: string }
-        priceCents: { type: integer }
-        condition: { type: string }
+        price_cents: { type: integer }
+        condition: { type: string, enum: [nuevo, como_nuevo, bueno, aceptable, para_piezas] }
         status: { type: string, enum: [published, reserved] }
         city: { type: string }
-        distanceKm: { type: number, nullable: true }
-        coverUrl: { type: string, format: uri }
-        publishedAt: { type: string, format: date-time }
-
-    ListingInput:
-      type: object
-      required: [title, description, priceCents, categorySlug, condition, city]
-      properties:
-        title: { type: string, minLength: 5, maxLength: 80 }
-        description: { type: string, minLength: 20, maxLength: 2000 }
-        priceCents: { type: integer, minimum: 1, maximum: 9999999 }
-        categorySlug: { type: string }
-        condition: { type: string, enum: [nuevo, como_nuevo, bueno, aceptable, para_piezas] }
-        city: { type: string, maxLength: 80 }
-        imageIds:
-          type: array
-          minItems: 1
-          maxItems: 8
-          items: { type: string, format: uuid }
-
-    Listing:
-      allOf:
-        - $ref: '#/components/schemas/ListingSummary'
-        - type: object
-          properties:
-            description: { type: string }
-            sellerAlias: { type: string }
-            images:
-              type: array
-              items:
-                type: object
-                properties:
-                  url: { type: string, format: uri }
-                  alt: { type: string }
-
-    Offer:
-      type: object
-      properties:
-        id: { type: string, format: uuid }
-        conversationId: { type: string, format: uuid }
-        amountCents: { type: integer }
-        status: { type: string, enum: [pending, accepted, rejected, superseded] }
-        createdAt: { type: string, format: date-time }
+        distance_km: { type: number, nullable: true }
+        cover_url: { type: string, format: uri, nullable: true }
+        cover_alt: { type: string, nullable: true }
+        published_at: { type: string, format: date-time }
+        total_count: { type: integer, description: Total de coincidencias de la búsqueda completa }
 ```
 
-**Ejemplo — buscar bicicletas de hasta 300 € cerca de Madrid**
+**Ejemplo — buscar bicicletas de hasta 300 € a menos de 25 km de Madrid**
 
 ```http
-GET /api/listings?q=bicicleta&category=deporte&maxPrice=30000&city=Madrid&distanceKm=25&sort=price_asc
-```
-
-```json
-{
-  "items": [
-    {
-      "id": "0f2b6a1e-4c9d-4b7a-9a11-2d3e4f5a6b7c",
-      "title": "Bicicleta de montaña 27,5\"",
-      "priceCents": 18000,
-      "condition": "bueno",
-      "status": "published",
-      "city": "Alcobendas",
-      "distanceKm": 14.2,
-      "coverUrl": "https://cdn.loop-market.app/listings/0f2b6a1e/cover.webp",
-      "publishedAt": "2026-09-12T09:31:04Z"
-    }
-  ],
-  "total": 1,
-  "page": 1,
-  "pageSize": 24
-}
-```
-
-**Ejemplo — ofertar 150 € por un anuncio de 180 €**
-
-```http
-POST /api/listings/0f2b6a1e-4c9d-4b7a-9a11-2d3e4f5a6b7c/offers
+POST /rest/v1/rpc/search_listings
+apikey: <publishable-key>
 Content-Type: application/json
-Cookie: lm_session=...
 
-{ "amountCents": 15000, "message": "¿Aceptarías 150 € si la recojo hoy?" }
+{
+  "search_term": "bicicleta",
+  "category_slug": "deporte",
+  "max_price": 30000,
+  "origin_lat": 40.4168,
+  "origin_lng": -3.7038,
+  "max_distance_km": 25,
+  "sort_by": "price_asc"
+}
 ```
 
 ```json
-{
-  "id": "9c1d2e3f-5a6b-4c7d-8e9f-0a1b2c3d4e5f",
-  "conversationId": "3a4b5c6d-7e8f-4a1b-9c2d-3e4f5a6b7c8d",
-  "amountCents": 15000,
-  "status": "pending",
-  "createdAt": "2026-09-16T11:02:47Z"
-}
+[
+  {
+    "id": "44444444-0000-4000-8000-000000000001",
+    "title": "Bicicleta de montaña 27,5 pulgadas",
+    "price_cents": 18000,
+    "condition": "bueno",
+    "status": "published",
+    "city": "Madrid",
+    "distance_km": 0.0,
+    "cover_url": "https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=1200&q=70",
+    "cover_alt": "Bicicleta de montaña 27,5 pulgadas",
+    "published_at": "2026-09-12T09:31:04.306Z",
+    "total_count": 1
+  }
+]
 ```
+
+**Ejemplo — abrir la conversación de un anuncio**
+
+```http
+POST /rest/v1/rpc/start_conversation
+apikey: <publishable-key>
+Authorization: Bearer <access-token>
+Content-Type: application/json
+
+{ "target_listing": "44444444-0000-4000-8000-000000000003" }
+```
+
+```json
+"3a4b5c6d-7e8f-4a1b-9c2d-3e4f5a6b7c8d"
+```
+
+Una segunda llamada del mismo comprador sobre el mismo anuncio devuelve ese mismo
+identificador: no crea un hilo nuevo.
 
 ---
 
@@ -1055,7 +1113,8 @@ cliente no se considera barrera de seguridad.
 - Ubicación: `src/features/create-listing/api/create-listing-action.ts`.
 - La lógica de dominio vive en `src/entities/listing/model/` y no importa nada de
   Next: la acción valida y delega.
-- Escritura con `prisma.$transaction`.
+- Escritura del anuncio y sus imágenes en una sola llamada al cliente de
+  Supabase, con `seller_id` tomado de la sesión.
 - Al terminar, `revalidatePath('/sell')` y redirección a la vista previa.
 - Sin comentarios en el código; el archivo no supera 300 líneas.
 
@@ -1145,31 +1204,33 @@ incidencias críticas, revisión de PR aprobada.
 
 **Descripción**
 
-Definir el esquema Prisma completo con las ocho entidades de §3, generar la
-primera migración y sembrar el árbol de categorías. Las invariantes que la base
-de datos puede garantizar se declaran en la base de datos, no sólo en el código.
+Definir el esquema completo con las ocho entidades de §3 en migraciones de
+Supabase, activar Row Level Security y sembrar el árbol de categorías. Las
+invariantes que la base de datos puede garantizar se declaran en la base de
+datos, no sólo en el código.
 
 **Criterios de aceptación**
 
-1. Modelos `User`, `Category`, `Listing`, `ListingImage`, `Conversation`,
-   `Message`, `Offer` y `Review` conformes a §3.2.
-2. Enumerados `ListingStatus`, `ListingCondition` y `OfferStatus`.
-3. Restricciones únicas: `User.email`, `User.alias`, `Category.slug`,
-   `(ListingImage.listing_id, position)`,
-   `(Conversation.listing_id, buyer_id)`, `(Review.listing_id, author_id)` y el
-   índice único parcial de una sola `Offer` con `status = pending` por
+1. Tablas `profiles`, `categories`, `listings`, `listing_images`,
+   `conversations`, `messages`, `offers` y `reviews` conformes a §3.2, con
+   `profiles.id` referenciando `auth.users`.
+2. Enumerados `listing_status`, `listing_condition` y `offer_status`.
+3. Restricciones únicas: `profiles.alias`, `categories.slug`,
+   `(listing_images.listing_id, position)`,
+   `(conversations.listing_id, buyer_id)`, `(reviews.listing_id, author_id)` y el
+   índice único parcial de una sola `offers` con `status = pending` por
    conversación.
 4. `CHECK`: `price_cents > 0 AND price_cents < 10000000`, `score BETWEEN 1 AND
    5`, `buyer_id <> seller_id`, `author_id <> subject_id` y la coherencia de
    `sold` (`buyer_id`, `sold_at` y `sold_price_cents` no nulos).
 5. Índices: `(status, published_at DESC)`, `(category_id, price_cents)`,
-   `(conversation_id, created_at)` y GIN sobre
-   `to_tsvector('spanish', title || ' ' || description)`.
-6. Borrado en cascada de `ListingImage` con su `Listing` y de `Message` con su
-   `Conversation`.
-7. `prisma migrate deploy` levanta la base desde cero sin errores.
-8. `bun run db:seed` carga el árbol de categorías en dos niveles y es
-   idempotente.
+   `(seller_id, status)`, `(conversation_id, created_at)` y GIN sobre la columna
+   generada `search_vector`.
+6. Borrado en cascada de `listing_images` con su `listings` y de `messages` con
+   su `conversations`.
+7. **RLS activo en las ocho tablas** con políticas de lectura pública, escritura
+   por autoría y acceso a conversaciones limitado a sus participantes.
+8. `bun run db:reset` levanta la base desde cero y carga la semilla sin errores.
 
 **Detalle técnico**
 
@@ -1177,14 +1238,17 @@ de datos puede garantizar se declaran en la base de datos, no sólo en el códig
   dinero.
 - Extensiones `citext` (email y alias insensibles a mayúsculas) y `unaccent`
   (búsqueda sin acentos) declaradas en la migración.
-- El índice único parcial y los `CHECK` se añaden con SQL crudo dentro de la
-  migración generada.
-- Ubicación: `prisma/schema.prisma`, `prisma/migrations/` y `prisma/seed.ts`.
+- Disparadores para las transiciones de estado, el bloqueo de precio en reserva,
+  la sustitución de ofertas y el recálculo de la valoración media.
+- Funciones `security definer` para las operaciones atómicas que además
+  comprueban autoría: `start_conversation`, `resolve_offer`,
+  `release_reservation` y `mark_listing_sold`.
+- Ubicación: `supabase/migrations/` y `supabase/seed.sql`.
 
 **Tests (integración contra PostgreSQL en Docker)**
 
-- `rechaza email duplicado`
 - `rechaza alias duplicado con distinta capitalización`
+- `rechaza una transición de estado no permitida`
 - `rechaza segunda conversación del mismo comprador sobre el mismo anuncio`
 - `rechaza segunda oferta pendiente en la misma conversación`
 - `rechaza valoración duplicada del mismo autor sobre la misma operación`
@@ -1192,8 +1256,8 @@ de datos puede garantizar se declaran en la base de datos, no sólo en el códig
 - `borra las imágenes al borrar el anuncio`
 - `encuentra "guitarra acústica" buscando "GUITARRA ACUSTICA"`
 
-**Definición de hecho:** migración aplicable desde cero, tests de integración en
-verde, diagrama de §3.1 coherente con el esquema final.
+**Definición de hecho:** migraciones aplicables desde cero, tests de integración
+en verde, diagrama de §3.1 coherente con el esquema final.
 
 ---
 
@@ -1204,18 +1268,24 @@ verde, diagrama de §3.1 coherente con el esquema final.
 `feature/entrega-1-AO` → `main` — *Documentación técnica y especificaciones.*
 
 Ficha del proyecto, descripción del producto, arquitectura, modelo de datos,
-especificación OpenAPI, historias de usuario y tickets de trabajo. Incluye el
+especificación de la API, historias de usuario y tickets de trabajo. Incluye el
 `AGENTS.md` con las convenciones del repositorio y el cambio OpenSpec
 `add-marketplace-mvp` con sus cuatro artefactos (propuesta, specs, diseño y
 tareas) y las cuatro capacidades del MVP.
 
 **Pull Request 2**
 
-Pendiente — entrega 2. `feature/entrega-2-AO` → `main`: código funcional con
-backend, frontend y base de datos conectados, y el flujo principal operativo.
+`feature/entrega-2-AO` → `main` — *Código funcional: backend, frontend y base de
+datos conectados.*
+
+Esquema completo en Supabase con RLS, disparadores y funciones RPC; arquitectura
+Feature-Sliced Design en `src/`; autenticación, publicación de anuncios, búsqueda
+filtrable y ciclo de negociación operativos; tooling con ESLint, Prettier,
+lefthook y commitlint; y tests unitarios y de componente con Vitest. Actualiza la
+documentación técnica para reflejar el stack real.
 
 **Pull Request 3**
 
-Pendiente — entrega 3. `final-project-AO` → `main`: tests unitarios, de
-integración y E2E, despliegue, documentación de IA en `prompts.md` y evidencia
-de funcionamiento.
+Pendiente — entrega 3. `final-project-AO` → `main`: tests de extremo a extremo con
+Playwright, despliegue en Vercel y Supabase gestionado, documentación de IA en
+`prompts.md` y evidencia de funcionamiento.

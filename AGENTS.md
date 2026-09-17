@@ -31,8 +31,9 @@ bun run typecheck    # tsc --noEmit
 bun run test         # vitest
 bun run test:watch   # vitest --watch
 bun run test:e2e     # playwright
-bun run db:migrate   # prisma migrate dev
-bun run db:seed      # semillas de categorías
+bun run db:start     # supabase start (Docker)
+bun run db:reset     # migraciones + semillas
+bun run db:types     # tipos TypeScript desde el esquema
 ```
 
 `bun` es el gestor de paquetes. No uses `npm` ni `yarn`: romperían `bun.lock`.
@@ -47,8 +48,8 @@ bun run db:seed      # semillas de categorías
 | Componentes | shadcn/ui sobre Radix, iconos de lucide-react |
 | Formularios | react-hook-form + zod (`@hookform/resolvers`) |
 | Estado | Context API; zustand sólo cuando el rerender importa |
-| Datos | PostgreSQL + Prisma |
-| Tests | Vitest + Testing Library, Playwright para E2E |
+| Datos | Supabase (PostgreSQL 17, Auth, Storage) |
+| Tests | Vitest + Testing Library (Playwright en la entrega 3) |
 | Hooks de git | lefthook + commitlint |
 
 Antes de escribir código que toque una librería, consulta su documentación
@@ -78,12 +79,13 @@ Reglas que no se negocian:
   compartir algo, baja ese algo a una capa inferior.
 - Cada slice expone su API pública en `index.ts`. Nadie importa rutas internas
   de otro slice.
-- Código exclusivo de servidor (Prisma, secretos) se exporta por
-  `index.server.ts`, no por `index.ts`.
+- Código exclusivo de servidor (cliente de Supabase con cookies, secretos) se
+  exporta por `index.server.ts`, no por `index.ts`.
 - Segmentos dentro de un slice: `ui`, `model`, `api`, `lib`, `config`.
 - Una ruta de `app/` no contiene lógica:
   `export { SearchPage as default } from '@/_pages/search'`.
-- `middleware.ts` e `instrumentation.ts` viven en la raíz, no en `src/`.
+- `proxy.ts` (el antiguo `middleware.ts` de Next.js 15) e `instrumentation.ts`
+  viven en la raíz, no en `src/`.
 
 Un slice se crea cuando hay código real que meter dentro. Nada de carpetas
 vacías preparadas para el futuro.
@@ -107,6 +109,14 @@ vacías preparadas para el futuro.
   realmente necesita estado, efecto o evento, y lo más abajo posible del árbol.
 - La lógica de dominio vive en `entities/*/model` y no importa nada de Next: la
   Server Action valida y delega.
+
+## Búsqueda
+
+El término de búsqueda lo posee el buscador de la cabecera y vive en `?q=`. Se
+confirma al enviar el formulario, **nunca en cada pulsación**: un debounce corto
+sigue disparando una consulta por letra en cuanto la pausa entre teclas supera su
+ventana. Los filtros discretos (categoría, estado, ciudad) sí se aplican al
+instante; los campos de precio esperan 600 ms porque se teclean.
 
 ## Validación
 
@@ -151,9 +161,14 @@ Un cambio nuevo se propone con `/opsx:propose` y se implementa con
 
 ## Seguridad
 
-- Sesión en cookie `httpOnly`, `secure`, `sameSite=lax`.
-- Contraseñas con hash Argon2id; nunca se registran ni se devuelven.
-- Toda mutación comprueba autoría antes de escribir.
+- Sesión en cookie `httpOnly`, `secure`, `sameSite=lax`, emitida por Supabase
+  Auth y refrescada en `proxy.ts`.
+- Las contraseñas las gestiona Supabase Auth: la aplicación nunca las ve.
+- **RLS activo en todas las tablas.** Una consulta no autorizada devuelve vacío,
+  no datos ajenos. Si añades una tabla, añade sus políticas en la misma
+  migración.
+- Toda mutación comprueba autoría antes de escribir, en la base de datos
+  (`security definer`) además de en el código.
 - Errores de autenticación genéricos: no revelan si el email existe.
 - Los secretos se leen de variables de entorno validadas con zod al arrancar.
   `.env*` nunca se commitea.
