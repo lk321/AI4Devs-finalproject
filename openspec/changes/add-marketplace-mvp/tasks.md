@@ -20,46 +20,46 @@
 
 ## 3. Identidad (`identity/user-auth`)
 
-- [ ] 3.1 Escribir los tests de los esquemas de registro y acceso a partir del spec, y verificar que fallan antes de implementar
-- [ ] 3.2 Implementar las Server Actions de registro, acceso y cierre de sesión sobre Supabase Auth y verificar que el error de credenciales es genérico
-- [ ] 3.3 Configurar la sesión de 30 días y el límite de intentos en `supabase/config.toml`, y verificar que una contraseña de menos de 12 caracteres se rechaza
-- [ ] 3.4 Implementar `features/auth-by-credentials` con react-hook-form y zod, y verificar en test de componente que los errores se muestran junto a cada campo
-- [ ] 3.5 Proteger las rutas privadas en `proxy.ts` y verificar que un visitante sin sesión es redirigido conservando la ruta de origen
-- [ ] 3.6 Implementar el perfil público por alias y verificar que no expone email ni teléfono
+- [x] 3.1 Escribir los tests de los esquemas de registro y acceso a partir del spec, y verificar que fallan antes de implementar
+- [x] 3.2 Implementar las Server Actions de registro, acceso y cierre de sesión sobre Supabase Auth y verificar que el error de credenciales es genérico
+- [x] 3.3 Configurar la sesión de 30 días y el límite de intentos en `supabase/config.toml`, y verificar que una contraseña de menos de 12 caracteres se rechaza
+- [x] 3.4 Implementar `features/auth-by-credentials` con react-hook-form y zod, y verificar en test de componente que los errores se muestran junto a cada campo
+- [x] 3.5 Proteger las rutas privadas en `proxy.ts` y verificar que un visitante sin sesión es redirigido conservando la ruta de origen
+- [x] 3.6 Implementar el perfil público por alias y verificar que no expone email ni teléfono
 
 ## 4. Anuncios (`marketplace/listings`)
 
-- [ ] 4.1 Escribir los tests de los escenarios de creación, publicación y ciclo de vida, y verificar que fallan
-- [ ] 4.2 Implementar la Server Action de creación con validación zod en servidor y verificar que un precio negativo enviado a mano se rechaza
-- [ ] 4.3 Implementar la subida y reordenación de imágenes contra Supabase Storage con los límites de formato, tamaño y cantidad, y verificar los escenarios de imágenes
-- [ ] 4.4 Implementar las acciones de cambio de estado apoyadas en los disparadores y verificar que las transiciones no permitidas se rechazan
-- [ ] 4.5 Implementar `features/create-listing` como formulario de tres pasos y verificar que no avanza con campos inválidos
-- [ ] 4.6 Implementar la página de detalle con `loading.tsx` y verificar que un anuncio en `draft` no es visible para terceros
-- [ ] 4.7 Implementar el panel de anuncios propios y verificar que sólo el autor puede cambiar el estado
+- [x] 4.1 Escribir los tests de los escenarios de creación, publicación y ciclo de vida, y verificar que fallan
+- [x] 4.2 Implementar la Server Action de creación con validación zod en servidor y verificar que un precio negativo enviado a mano se rechaza
+- [x] 4.3 Implementar la subida y reordenación de imágenes contra Supabase Storage con los límites de formato, tamaño y cantidad, y verificar los escenarios de imágenes
+- [x] 4.4 Implementar las acciones de cambio de estado apoyadas en los disparadores y verificar que las transiciones no permitidas se rechazan
+- [x] 4.5 Implementar `features/create-listing` como formulario de tres pasos y verificar que no avanza con campos inválidos
+- [x] 4.6 Implementar la página de detalle con `loading.tsx` y verificar que un anuncio en `draft` no es visible para terceros
+- [x] 4.7 Implementar el panel de anuncios propios y verificar que sólo el autor puede cambiar el estado
 
 ## 5. Búsqueda (`marketplace/search`)
 
-- [ ] 5.1 Escribir los tests de los escenarios de búsqueda, filtros, orden y paginación, y verificar que fallan
-- [ ] 5.2 Implementar la lectura del catálogo en Server Component contra `search_listings` y verificar los escenarios de texto
-- [ ] 5.3 Implementar los filtros combinados de categoría, precio, estado y distancia y verificar el escenario de rango de precio inválido
-- [ ] 5.4 Sincronizar filtros, orden y página con los parámetros de URL y verificar que recargar reproduce el mismo resultado
-- [ ] 5.5 Implementar `features/filter-listings` con store de zustand y verificar que cambiar un filtro no rerenderiza las tarjetas de resultado
-- [ ] 5.6 Implementar `widgets/listing-catalog` con paginación de 24, total de coincidencias y prefetch de los resultados, y verificar el escenario de página fuera de rango
+- [x] 5.1 Escribir los tests de los escenarios de búsqueda, filtros, orden y paginación, y verificar que fallan
+- [x] 5.2 Implementar la lectura del catálogo en Server Component contra `search_listings` y verificar los escenarios de texto
+- [x] 5.3 Implementar los filtros combinados de categoría, precio, estado y distancia y verificar el escenario de rango de precio inválido
+- [x] 5.4 Sincronizar filtros, orden y página con los parámetros de URL y verificar que recargar reproduce el mismo resultado
+- [x] 5.5 Implementar `features/filter-listings` con store de zustand y verificar que cambiar un filtro no rerenderiza las tarjetas de resultado
+- [x] 5.6 Implementar `widgets/listing-catalog` con paginación de 24, total de coincidencias y prefetch de los resultados, y verificar el escenario de página fuera de rango
 
 ## 6. Operaciones (`marketplace/transactions`)
 
-- [ ] 6.1 Escribir los tests de los escenarios de conversación, mensajes, ofertas, reserva, cierre y valoración, y verificar que fallan
-- [ ] 6.2 Implementar el inicio de conversación con `start_conversation` y verificar que el segundo mensaje reutiliza el hilo
-- [ ] 6.3 Implementar el envío de mensajes con sus límites y verificar que un tercero no puede leer el hilo
-- [ ] 6.4 Implementar las ofertas con la regla de una sola `pending` y verificar el escenario de oferta superada
-- [ ] 6.5 Implementar aceptación, rechazo, reserva y liberación con `resolve_offer` y `release_reservation`, y verificar el cambio de estado del anuncio
-- [ ] 6.6 Implementar el cierre de venta con `mark_listing_sold` y verificar que no se puede cerrar sin reserva previa
-- [ ] 6.7 Implementar la valoración mutua con ventana de 30 días y unicidad, y verificar el recálculo de la media del perfil
-- [ ] 6.8 Implementar `widgets/conversation-thread` con contador de no leídos y verificar el escenario del indicador
+- [x] 6.1 Escribir los tests de los escenarios de conversación, mensajes, ofertas, reserva, cierre y valoración, y verificar que fallan
+- [x] 6.2 Implementar el inicio de conversación con `start_conversation` y verificar que el segundo mensaje reutiliza el hilo
+- [x] 6.3 Implementar el envío de mensajes con sus límites y verificar que un tercero no puede leer el hilo
+- [x] 6.4 Implementar las ofertas con la regla de una sola `pending` y verificar el escenario de oferta superada
+- [x] 6.5 Implementar aceptación, rechazo, reserva y liberación con `resolve_offer` y `release_reservation`, y verificar el cambio de estado del anuncio
+- [x] 6.6 Implementar el cierre de venta con `mark_listing_sold` y verificar que no se puede cerrar sin reserva previa
+- [x] 6.7 Implementar la valoración mutua con ventana de 30 días y unicidad, y verificar el recálculo de la media del perfil
+- [x] 6.8 Implementar `widgets/conversation-thread` con contador de no leídos y verificar el escenario del indicador
 
 ## 7. Cierre
 
-- [ ] 7.1 Verificar que `bun run lint`, `bun run typecheck`, `bun run test` y `bun run build` pasan en limpio
+- [x] 7.1 Verificar que `bun run lint`, `bun run typecheck`, `bun run test` y `bun run build` pasan en limpio
 - [ ] 7.2 Recorrer publicar, buscar y cerrar una operación en el navegador y verificar que el flujo principal funciona de extremo a extremo
-- [ ] 7.3 Revisar que ningún archivo supera 300 líneas y que no quedan comentarios explicativos en el código
-- [ ] 7.4 Actualizar `readme.md` y `AGENTS.md` con el stack real (Supabase) y la estructura entregada
+- [x] 7.3 Revisar que ningún archivo supera 300 líneas y que no quedan comentarios explicativos en el código
+- [x] 7.4 Actualizar `readme.md` y `AGENTS.md` con el stack real (Supabase) y la estructura entregada
