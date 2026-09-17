@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useHydrated } from '@/shared/lib/use-hydrated'
 import { useForm, useWatch } from 'react-hook-form'
 import { Star } from 'lucide-react'
 import { toast } from 'sonner'
@@ -37,6 +38,7 @@ export function ReviewDialog({
 }) {
   const [open, setOpen] = useState(false)
 
+  const hydrated = useHydrated()
   const form = useForm<ReviewInput>({
     resolver: zodResolver(reviewSchema),
     defaultValues: { listingId, subjectId, score: 5, comment: '' },
@@ -70,7 +72,7 @@ export function ReviewDialog({
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form method="post" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="score"
@@ -132,7 +134,7 @@ export function ReviewDialog({
               )}
             />
             <DialogFooter>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
+              <Button type="submit" disabled={form.formState.isSubmitting || !hydrated}>
                 {form.formState.isSubmitting ? 'Enviando…' : 'Enviar valoración'}
               </Button>
             </DialogFooter>

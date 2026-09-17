@@ -1,6 +1,7 @@
 'use client'
 
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useHydrated } from '@/shared/lib/use-hydrated'
 import { useForm, useWatch } from 'react-hook-form'
 import { SendHorizontal } from 'lucide-react'
 import { toast } from 'sonner'
@@ -19,6 +20,7 @@ export function MessageForm({
   disabled?: boolean
   disabledReason?: string
 }) {
+  const hydrated = useHydrated()
   const form = useForm<MessageInput>({
     resolver: zodResolver(messageSchema),
     defaultValues: { conversationId, body: '' },
@@ -46,7 +48,7 @@ export function MessageForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2 border-t p-4">
+      <form method="post" onSubmit={form.handleSubmit(onSubmit)} className="space-y-2 border-t p-4">
         <FormField
           control={form.control}
           name="body"
@@ -70,7 +72,7 @@ export function MessageForm({
           <span className="text-muted-foreground text-xs tabular-nums">
             {body.length} / {MAX_MESSAGE_LENGTH}
           </span>
-          <Button type="submit" size="sm" disabled={pending}>
+          <Button type="submit" size="sm" disabled={pending || !hydrated}>
             <SendHorizontal className="size-4" aria-hidden />
             {pending ? 'Enviando…' : 'Enviar'}
           </Button>

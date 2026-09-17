@@ -12,7 +12,8 @@ insert into public.categories (id, slug, name, parent_id, position) values
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
-  raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+  raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+  confirmation_token, recovery_token, email_change, email_change_token_new
 )
 select
   '00000000-0000-0000-0000-000000000000',
@@ -25,7 +26,8 @@ select
   '{"provider":"email","providers":["email"]}'::jsonb,
   jsonb_build_object('alias', seed.alias, 'city', seed.city),
   now() - (seed.days || ' days')::interval,
-  now()
+  now(),
+  '', '', '', ''
 from (values
   ('33333333-0000-4000-8000-000000000001'::uuid, 'ana@loop.test', 'ana_ruiz', 'Madrid', 420),
   ('33333333-0000-4000-8000-000000000002'::uuid, 'carlos@loop.test', 'carlos_vega', 'Alcobendas', 180),

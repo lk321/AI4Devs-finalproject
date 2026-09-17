@@ -3,6 +3,11 @@ import { createServerClient } from '@supabase/ssr'
 import { env } from '@/shared/config/env'
 
 const PRIVATE_ROUTES = ['/sell', '/messages', '/account']
+const GUEST_ONLY_ROUTES = ['/login', '/signup']
+
+function safeNext(value: string | null) {
+  return value && value.startsWith('/') && !value.startsWith('//') ? value : '/search'
+}
 
 const SECURITY_HEADERS: Record<string, string> = {
   'X-Content-Type-Options': 'nosniff',
@@ -40,6 +45,13 @@ export async function proxy(request: NextRequest) {
     login.pathname = '/login'
     login.search = `?next=${encodeURIComponent(pathname + search)}`
     return NextResponse.redirect(login)
+  }
+
+  if (user && GUEST_ONLY_ROUTES.includes(pathname)) {
+    const target = request.nextUrl.clone()
+    target.pathname = safeNext(request.nextUrl.searchParams.get('next'))
+    target.search = ''
+    return NextResponse.redirect(target)
   }
 
   for (const [header, value] of Object.entries(SECURITY_HEADERS)) {

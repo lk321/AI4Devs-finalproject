@@ -60,6 +60,6 @@
 ## 7. Cierre
 
 - [x] 7.1 Verificar que `bun run lint`, `bun run typecheck`, `bun run test` y `bun run build` pasan en limpio
-- [ ] 7.2 Recorrer publicar, buscar y cerrar una operación en el navegador y verificar que el flujo principal funciona de extremo a extremo
+- [x] 7.2 Recorrer publicar, buscar y cerrar una operación en el navegador y verificar que el flujo principal funciona de extremo a extremo
 - [x] 7.3 Revisar que ningún archivo supera 300 líneas y que no quedan comentarios explicativos en el código
 - [x] 7.4 Actualizar `readme.md` y `AGENTS.md` con el stack real (Supabase) y la estructura entregada

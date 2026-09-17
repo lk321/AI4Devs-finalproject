@@ -31,28 +31,29 @@ $$;
 create or replace function public.resolve_offer(target_offer uuid, accept boolean)
 returns void language plpgsql security definer set search_path = public as $$
 declare
-  listing_id uuid;
-  seller uuid;
-  buyer uuid;
-  amount integer;
+  v_listing uuid;
+  v_seller uuid;
+  v_buyer uuid;
+  v_amount integer;
 begin
   select l.id, l.seller_id, o.buyer_id, o.amount_cents
-  into listing_id, seller, buyer, amount
+  into v_listing, v_seller, v_buyer, v_amount
   from public.offers o
   join public.conversations c on c.id = o.conversation_id
   join public.listings l on l.id = c.listing_id
   where o.id = target_offer and o.status = 'pending';
 
-  if listing_id is null then
+  if v_listing is null then
     raise exception 'oferta no encontrada o ya resuelta' using errcode = 'no_data_found';
   end if;
 
-  if seller <> auth.uid() then
+  if v_seller <> auth.uid() then
     raise exception 'solo el vendedor resuelve la oferta' using errcode = 'insufficient_privilege';
   end if;
 
   update public.offers
-  set status = case when accept then 'accepted' else 'rejected' end, resolved_at = now()
+  set status = (case when accept then 'accepted' else 'rejected' end)::public.offer_status,
+      resolved_at = now()
   where id = target_offer;
 
   if accept then
@@ -60,13 +61,13 @@ begin
     set status = 'superseded', resolved_at = now()
     from public.conversations c
     where o.conversation_id = c.id
-      and c.listing_id = listing_id
+      and c.listing_id = v_listing
       and o.status = 'pending'
       and o.id <> target_offer;
 
     update public.listings
-    set status = 'reserved', buyer_id = buyer, sold_price_cents = amount
-    where id = listing_id;
+    set status = 'reserved', buyer_id = v_buyer, sold_price_cents = v_amount
+    where id = v_listing;
   end if;
 end;
 $$;

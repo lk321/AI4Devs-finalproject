@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useHydrated } from '@/shared/lib/use-hydrated'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { HandCoins } from 'lucide-react'
@@ -44,6 +45,7 @@ export function OfferForm({
     [listingPriceCents],
   )
 
+  const hydrated = useHydrated()
   const form = useForm<{ amount: number }>({
     resolver: zodResolver(schema),
     defaultValues: { amount: centsToEuro(listingPriceCents) },
@@ -82,7 +84,7 @@ export function OfferForm({
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form method="post" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="amount"
@@ -108,7 +110,7 @@ export function OfferForm({
               )}
             />
             <DialogFooter>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
+              <Button type="submit" disabled={form.formState.isSubmitting || !hydrated}>
                 {form.formState.isSubmitting ? 'Enviando…' : 'Enviar oferta'}
               </Button>
             </DialogFooter>

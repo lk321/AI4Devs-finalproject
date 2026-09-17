@@ -52,7 +52,7 @@ export function CreateListingForm({ categories }: { categories: CategoryTree[] }
 
   return (
     <Form {...form}>
-      <form className="space-y-6" onSubmit={(event) => event.preventDefault()}>
+      <form method="post" className="space-y-6" onSubmit={(event) => event.preventDefault()}>
         <StepIndicator current={step} />
 
         <Card>

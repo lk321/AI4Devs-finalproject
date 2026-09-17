@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Loader2 } from 'lucide-react'
+import { useHydrated } from '@/shared/lib/use-hydrated'
 import { credentialsSchema, type Credentials } from '@/entities/user'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { Button } from '@/shared/ui/button'
@@ -19,7 +20,8 @@ export function LoginForm({ action, next }: { action: SignInAction; next?: strin
   })
 
   const rootError = form.formState.errors.root?.message
-  const pending = form.formState.isSubmitting
+  const hydrated = useHydrated()
+  const pending = form.formState.isSubmitting || !hydrated
 
   async function onSubmit(values: Credentials) {
     form.clearErrors('root')
@@ -29,7 +31,7 @@ export function LoginForm({ action, next }: { action: SignInAction; next?: strin
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5" noValidate>
+      <form method="post" onSubmit={form.handleSubmit(onSubmit)} className="space-y-5" noValidate>
         {rootError ? (
           <Alert variant="destructive" role="alert">
             <AlertDescription>{rootError}</AlertDescription>

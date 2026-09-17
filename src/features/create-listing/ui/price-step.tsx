@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type ComponentProps } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 import { CITIES, type CategoryTree, type ListingDraft } from '@/entities/listing'
 import {
@@ -21,15 +21,17 @@ function PriceInput({
   value,
   onBlur,
   onChange,
+  ...props
 }: {
   value: number | undefined
   onBlur: () => void
   onChange: (cents: number | undefined) => void
-}) {
+} & Omit<ComponentProps<typeof Input>, 'value' | 'onBlur' | 'onChange'>) {
   const [text, setText] = useState(value === undefined ? '' : (value / 100).toFixed(2))
 
   return (
     <Input
+      {...props}
       type="number"
       inputMode="decimal"
       min={0.01}

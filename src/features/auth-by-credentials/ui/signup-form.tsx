@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Loader2 } from 'lucide-react'
+import { useHydrated } from '@/shared/lib/use-hydrated'
 import { signUpSchema, type SignUpInput } from '@/entities/user'
 import { CITIES } from '@/entities/listing'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
@@ -30,7 +31,8 @@ export function SignUpForm({ action }: { action: SignUpAction }) {
   })
 
   const rootError = form.formState.errors.root?.message
-  const pending = form.formState.isSubmitting
+  const hydrated = useHydrated()
+  const pending = form.formState.isSubmitting || !hydrated
 
   async function onSubmit(values: SignUpInput) {
     form.clearErrors('root')
@@ -45,7 +47,7 @@ export function SignUpForm({ action }: { action: SignUpAction }) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5" noValidate>
+      <form method="post" onSubmit={form.handleSubmit(onSubmit)} className="space-y-5" noValidate>
         {rootError ? (
           <Alert variant="destructive" role="alert">
             <AlertDescription>{rootError}</AlertDescription>
