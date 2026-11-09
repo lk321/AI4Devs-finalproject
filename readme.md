@@ -30,8 +30,8 @@ verificada y reputación construida sobre operaciones reales.
 
 ### **0.4. URL del proyecto:**
 
-Pendiente de despliegue público. Se publicará en Vercel durante la entrega 3.
-La aplicación es ejecutable en local siguiendo las instrucciones de §1.4.
+Despliegue en Vercel + Supabase gestionado, descrito en §2.4 (pasos en «Publicar
+en producción»). La aplicación es ejecutable en local siguiendo §1.4.
 
 > Puede ser pública o privada, en cuyo caso deberás compartir los accesos de manera segura. Puedes enviarlos a [alvaro@lidr.co](mailto:alvaro@lidr.co) usando algún servicio como [onetimesecret](https://onetimesecret.com/).
 
@@ -169,8 +169,10 @@ bun run dev          # http://localhost:3000
 bun run lint         # eslint, incluidas las reglas de capas FSD
 bun run format       # prettier --write
 bun run typecheck    # tsc --noEmit
-bun run test         # vitest (unidad e integración)
-bun run build        # build de producción
+bun run test              # vitest (unidad y componente)
+bun run test:integration  # base de datos real (requiere db:start + db:reset)
+bun run test:e2e          # Playwright sobre el build de producción
+bun run build             # build de producción
 ```
 
 **Contra un proyecto Supabase alojado:** crea el proyecto, apunta
@@ -178,8 +180,8 @@ bun run build        # build de producción
 aplica el esquema con `bunx supabase link --project-ref <ref>` seguido de
 `bunx supabase db push`.
 
-> Los tests de extremo a extremo con Playwright y el despliegue se incorporan en
-> la entrega 3.
+**Evidencia:** `bun run test:e2e` genera capturas por paso y un informe HTML en
+`e2e/report/` (también se sube como artefacto en la CI).
 
 ---
 
@@ -414,6 +416,30 @@ modo que el entorno de desarrollo reproduce el de producción, no lo aproxima.
 5. **Rollback:** promoción del despliegue anterior en Vercel; si la migración fue
    destructiva, una migración correctiva en Supabase.
 
+**Publicar en producción (CD).** `.github/workflows/cd.yml` se ejecuta en cada
+push a `main`: (1) `supabase db push` aplica las migraciones y (2) `vercel build`
++ `vercel deploy --prod` publica la aplicación. Configuración única:
+
+1. **Supabase** → proyecto nuevo. Anotar *Project ref*, *Project URL*, la clave
+   *publishable/anon* y la contraseña de la base. Authentication → Providers →
+   Email: **desactivar «Confirm email»** y subir la longitud mínima de contraseña
+   a 12, para que los revisores puedan registrarse sin bandeja de correo.
+2. **Datos de demostración, una sola vez** (usuarios `ana@loop.test`,
+   `carlos@loop.test`, `lucia@loop.test` y ocho anuncios):
+   `bunx supabase link --project-ref <ref> && bunx supabase db push --include-seed`
+3. **Vercel** → importar el repositorio (Next.js se detecta solo). Variables de
+   entorno de *Production* y *Preview*: `NEXT_PUBLIC_SUPABASE_URL` y
+   `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Desactivar el *Git integration* de despliegue
+   automático si se quiere que sólo despliegue el workflow, o dejarlo activo y
+   usar el workflow únicamente para migraciones.
+4. **Secretos en GitHub** (Settings → Secrets → Actions): `SUPABASE_ACCESS_TOKEN`,
+   `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_REF`, `VERCEL_TOKEN`, `VERCEL_ORG_ID`
+   y `VERCEL_PROJECT_ID` (los dos últimos salen de `.vercel/project.json` tras
+   `bunx vercel link`). La CI no necesita secretos: usa la clave pública de demo
+   de Supabase local.
+5. Hacer merge a `main`, copiar la URL de producción de Vercel en §0.4 y compartir
+   con los revisores las credenciales de demo de §1.4.
+
 **Entornos:** `local` (Supabase en Docker), `preview` (proyecto Supabase de
 pruebas) y `production`. Los secretos viven en las variables de entorno de Vercel
 y **se validan con zod al arrancar** (`src/shared/config/env.ts`): si falta una,
@@ -464,8 +490,14 @@ negativo, autoría ajena, oferta superior al precio, mensaje vacío o de más de
 alias duplicado, segunda conversación del mismo comprador sobre el mismo anuncio,
 segunda oferta pendiente, valoración duplicada y transición de estado inválida.
 
-**Extremo a extremo (Playwright).** Llega en la entrega 3, sobre los tres
-recorridos críticos: publicar, buscar y cerrar una operación.
+**Integración** (`tests/integration/`, `bun run test:integration`). Supabase local
+real, sin mocks: RLS, `CHECK`, transiciones inválidas, RPC y búsqueda sin tildes.
+No son destructivos: pueden repetirse sin resetear la base.
+
+**Extremo a extremo (Playwright)** (`e2e/`, `bun run test:e2e`). Sobre el build de
+producción: buscar y abrir una ficha, acceso erróneo con mensaje genérico,
+publicar con validación, y negociar (el comprador ofrece, el vendedor acepta, con
+dos contextos de navegador). La CI los ejecuta contra Supabase local.
 
 ---
 
@@ -1286,6 +1318,9 @@ documentación técnica para reflejar el stack real.
 
 **Pull Request 3**
 
-Pendiente — entrega 3. `final-project-AO` → `main`: tests de extremo a extremo con
-Playwright, despliegue en Vercel y Supabase gestionado, documentación de IA en
-`prompts.md` y evidencia de funcionamiento.
+`final-project-AO` → `main` — *Entrega final.*
+
+Tests de integración contra Supabase local y de extremo a extremo con Playwright,
+workflow de GitHub Actions (lint, formato, typecheck, tests, build, integración y
+E2E), documentación de uso de IA en `prompts.md`, instrucciones de despliegue en
+Vercel y Supabase, y evidencia de funcionamiento (informe HTML de Playwright).

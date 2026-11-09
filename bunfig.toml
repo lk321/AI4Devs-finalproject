@@ -1,0 +1,3 @@
+[test]
+# `bun test` no es Vitest: este guard aborta con un mensaje claro.
+preload = ["./scripts/use-vitest.ts"]
