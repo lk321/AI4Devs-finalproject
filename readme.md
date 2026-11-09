@@ -435,8 +435,8 @@ push a `main`: (1) `supabase db push` aplica las migraciones y (2) `vercel build
 4. **Secretos en GitHub** (Settings → Secrets → Actions): `SUPABASE_ACCESS_TOKEN`,
    `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_REF`, `VERCEL_TOKEN`, `VERCEL_ORG_ID`
    y `VERCEL_PROJECT_ID` (los dos últimos salen de `.vercel/project.json` tras
-   `bunx vercel link`). Variable de Actions `SUPABASE_LOCAL_ANON_KEY`: la clave
-   pública de demo que imprime `supabase start` (sólo para el build de la CI).
+   `bunx vercel link`). La CI no necesita secretos: usa la clave pública de demo
+   de Supabase local.
 5. Hacer merge a `main`, copiar la URL de producción de Vercel en §0.4 y compartir
    con los revisores las credenciales de demo de §1.4.
 
